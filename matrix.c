@@ -3,8 +3,26 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+static uint8_t pos;									/* Current position in framebuffer */
+
 static uint8_t screen[ROWS] = {
-	0x7E, 0x11, 0x11, 0x11, 0x7E, 0x00, 0x7F, 0x09, 0x19, 0x29, 0x46, 0x01, 0x01, 0x7F, 0x01, 0x01
+	0x7E, 0x11, 0x11, 0x11, 0x7E, 0x00, 0x7F, 0x09,
+	0x19, 0x29, 0x46, 0x01, 0x01, 0x7F, 0x01, 0x01
+};
+
+static uint8_t dig3x5[] = {
+	0x1F, 0x11, 0x1F, // 0
+	0x12, 0x1F, 0x10, // 1
+	0x1D, 0x15, 0x17, // 2
+	0x15, 0x15, 0x1F, // 3
+	0x07, 0x04, 0x1F, // 4
+	0x17, 0x15, 0x1D, // 5
+	0x1F, 0x15, 0x1D, // 6
+	0x01, 0x01, 0x1F, // 7
+	0x1F, 0x15, 0x1F, // 8
+	0x17, 0x15, 0x1F, // 9
+	0x04, 0x04, 0x04, // minus
+	0x00, 0x00, 0x00, // space
 };
 
 static uint8_t row;
@@ -76,6 +94,84 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 			*ports[i].port |= ports[i].mask;
 		else
 			*ports[i].port &= ~ports[i].mask;
+	}
+
+	return;
+}
+
+void matrixSetPos(uint8_t value)
+{
+	pos = value;
+
+	return;
+}
+
+void matrixShowDig(uint8_t dig)
+{
+	uint8_t i;
+
+	for (i = 0; i < 3; i++) {
+		if (pos < ROWS) {
+			screen[pos] &= 0xE0;
+			screen[pos] |= dig3x5[dig * 3 + i];
+			pos++;
+		}
+	}
+	if (pos < ROWS)
+		screen[pos++] &= 0xE0;
+
+	return;
+}
+
+void matrixClear(void)
+{
+	uint8_t i;
+
+	for (i = 0; i < ROWS; i++)
+		screen[i] = 0x00;
+
+	return;
+}
+
+void matrixShowNumber(int8_t value)
+{
+	uint8_t neg = 0;
+
+	if (value < 0) {
+		neg = 1;
+		value = -value;
+	}
+	if (value / 10) {
+		if (neg)
+			matrixShowDig(10); // minus
+		else
+			matrixShowDig(11); // space
+		matrixShowDig(value / 10);
+	} else {
+		matrixShowDig(11); // space
+		if (neg)
+			matrixShowDig(10); // minus
+		else
+			matrixShowDig(11); // space
+	}
+	matrixShowDig(value % 10);
+
+	return;
+}
+
+void matrixShowVolBar(int8_t value)
+{
+	uint8_t i;
+
+	/* Shift scale (-79..0 => 2..81) and normalize volume value */
+	value += 81;
+	value /= 5;
+
+	for (i = 0; i < 16; i++) {
+		if (value > i)
+			screen[i] |= 0xC0;
+		else
+			screen[i] &= ~0xC0;
 	}
 
 	return;

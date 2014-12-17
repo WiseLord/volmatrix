@@ -1,0 +1,20 @@
+#ifndef TDA7448_H
+#define TDA7448_H
+
+#include <inttypes.h>
+
+enum {
+	TDA7448_SP_FRONTLEFT,
+	TDA7448_SP_FRONTRIGHT,
+	TDA7448_SP_REARLEFT,
+	TDA7448_SP_REARRIGHT,
+	TDA7448_SP_CENTER,
+	TDA7448_SP_SUBWOOFER
+};
+
+#define TDA7448_CHANNELS	6
+#define TDA7448_SP_MIN		-79
+
+void setSpeakers(void);
+
+#endif /* TDA7448_H */
