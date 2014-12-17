@@ -6,11 +6,13 @@
 
 #define ROWS		16
 
-void matrixInit();
-void matrixSetPos(uint8_t value);
-void matrixShowDig(uint8_t dig);
+void matrixInit(void);
 void matrixClear(void);
-void matrixShowNumber(int8_t value);
-void matrixShowVolBar(int8_t value);
+
+void showVolume(int8_t value);
+void showBalance(int8_t value);
+void showFront(int8_t value);
+void showCenter(int8_t value);
+void showSubwoofer(int8_t value);
 
 #endif /* MATRIX_H */
