@@ -37,6 +37,16 @@ enum {
 	CMD_EMPTY = 0xEF
 };
 
+enum {
+	MODE_STANDBY,
+	MODE_VOLUME,
+	MODE_BALANCE,
+	MODE_FRONT,
+	MODE_CENTER,
+	MODE_SUBWOOFER,
+	MODE_MUTE
+};
+
 // Button press durations */
 #define SHORT_PRESS		100
 #define LONG_PRESS		600
@@ -51,5 +61,8 @@ void showCenter(int8_t value);
 void showSubwoofer(int8_t value);
 
 uint8_t getCmdBuf(void);
+
+void setDisplayTime(uint16_t value);
+uint16_t getDisplayTime(void);
 
 #endif /* MATRIX_H */

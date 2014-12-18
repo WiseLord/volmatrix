@@ -10,6 +10,7 @@ static volatile uint8_t row;						/* Current row being scanned */
 static uint8_t screen[ROWS];						/* Screen buffer */
 
 static volatile uint8_t cmdBuf;
+static volatile uint16_t displayTime;
 
 const static uint8_t dig3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
@@ -231,6 +232,10 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 		btnCnt = 0;
 	}
 
+	/* Timer of current display mode */
+	if (displayTime)
+		displayTime--;
+
 	return;
 }
 
@@ -355,4 +360,16 @@ uint8_t getCmdBuf(void)
 	cmdBuf = CMD_EMPTY;
 
 	return ret;
+}
+
+void setDisplayTime(uint16_t value)
+{
+	displayTime = value;
+
+	return;
+}
+
+uint16_t getDisplayTime(void)
+{
+	return displayTime;
 }
