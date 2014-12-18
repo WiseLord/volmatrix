@@ -10,28 +10,31 @@ int main(void)
 
 	matrixClear();
 
-	int8_t i;
+	uint8_t cmd = CMD_EMPTY;
 
-	while (1) {
-		for (i = -8; i <= 8; i++) {
-			showBalance(i);
-			_delay_ms(200);
-		}
-		for (i = -8; i <= 8; i++) {
-			showFront(i);
-			_delay_ms(200);
-		}
-		for (i = -16; i <= 0; i++) {
-			showCenter(i);
-			_delay_ms(200);
-		}
-		for (i = -16; i <= 0; i++) {
-			showSubwoofer(i);
-			_delay_ms(200);
-		}
-		for (i = -79; i <= 0; i++) {
-			showVolume(i);
-			_delay_ms(200);
+	while(1) {
+		cmd = getCmdBuf();
+
+		switch (cmd) {
+		case CMD_BTN_0:
+			showBalance(4);
+			_delay_ms(500);
+			break;
+		case CMD_BTN_2:
+			showFront(-5);
+			_delay_ms(500);
+			break;
+		case CMD_BTN_0_LONG:
+			showSubwoofer(-4);
+			_delay_ms(500);
+			break;
+		case CMD_BTN_2_LONG:
+			showCenter(-6);
+			_delay_ms(500);
+			break;
+		default:
+			showVolume(-50);
+			break;
 		}
 	}
 

@@ -53,4 +53,7 @@ typedef struct {
 #define REG_CLK				B
 #define REG_CLK_LINE	(1<<7)
 
+#define BUTTON				B
+#define BUTTON_LINE		(1<<5)
+
 #endif /* PINS_H */

@@ -5,9 +5,11 @@
 #include <avr/pgmspace.h>
 
 static uint8_t pos;									/* Current position in framebuffer */
-static uint8_t row;									/* Current row being scanned */
+static volatile uint8_t row;						/* Current row being scanned */
 
 static uint8_t screen[ROWS];						/* Screen buffer */
+
+static volatile uint8_t cmdBuf;
 
 const static uint8_t dig3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
@@ -137,18 +139,25 @@ static void matrixshowBalBar(int8_t value)
 	return;
 }
 
+static volatile uint8_t btnState;				/* Button state */
+
 ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 {
-	TCNT0 = 131;
 	uint8_t i;
+
+	uint8_t btnNow;
+	static uint8_t btnPrev = 0;
+	static int16_t btnCnt = 0;						/* Buttons press duration value */
+
+	TCNT0 = 131;
 
 	if (++row >= 8)
 		row = 0;
 
 	if (row == 7)
-		PORT(REG_DATA) &= ~REG_DATA_LINE;
-	else
 		PORT(REG_DATA) |= REG_DATA_LINE;
+	else
+		PORT(REG_DATA) &= ~REG_DATA_LINE;
 	PORT(REG_CLK) |= REG_CLK_LINE;
 	asm("nop");
 	PORT(REG_CLK) &= ~REG_CLK_LINE;
@@ -157,6 +166,69 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 			*ports[i].port |= ports[i].mask;
 		else
 			*ports[i].port &= ~ports[i].mask;
+	}
+
+	/* Update buttons state */
+	if (PIN(BUTTON) & BUTTON_LINE)
+		btnState &= ~(1<<row);
+	else
+		btnState |= (1<<row);
+
+	btnNow = btnState & 0x3F;
+
+	/* If button event has happened, place it to command buffer */
+	if (btnNow) {
+		if (btnNow == btnPrev) {
+			btnCnt++;
+			if (btnCnt == LONG_PRESS) {
+				switch (btnPrev) {
+				case (1<<0):
+					cmdBuf = CMD_BTN_0_LONG;
+					break;
+				case (1<<1):
+					cmdBuf = CMD_BTN_1_LONG;
+					break;
+				case (1<<2):
+					cmdBuf = CMD_BTN_2_LONG;
+					break;
+				case (1<<3):
+					cmdBuf = CMD_BTN_3_LONG;
+					break;
+				case (1<<4):
+					cmdBuf = CMD_BTN_4_LONG;
+					break;
+				case (1<<5):
+					cmdBuf = CMD_BTN_5_LONG;
+					break;
+				}
+			}
+		} else {
+			btnPrev = btnNow;
+		}
+	} else {
+		if ((btnCnt > SHORT_PRESS) && (btnCnt < LONG_PRESS)) {
+			switch (btnPrev) {
+			case (1<<0):
+				cmdBuf = CMD_BTN_0;
+				break;
+			case (1<<1):
+				cmdBuf = CMD_BTN_1;
+				break;
+			case (1<<2):
+				cmdBuf = CMD_BTN_2;
+				break;
+			case (1<<3):
+				cmdBuf = CMD_BTN_3;
+				break;
+			case (1<<4):
+				cmdBuf = CMD_BTN_4;
+				break;
+			case (1<<5):
+				cmdBuf = CMD_BTN_5;
+				break;
+			}
+		}
+		btnCnt = 0;
 	}
 
 	return;
@@ -197,7 +269,7 @@ void matrixInit(void)
 	DDR(REG_CLK) |= REG_CLK_LINE;
 
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
-	TCCR0 |= (0<<CS02) | (1<<CS01) | (1<<CS00);		/* Set timer prescaller to 64 */
+	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);		/* Set timer prescaller to 64 */
 
 	return;
 }
@@ -275,4 +347,12 @@ void showSubwoofer(int8_t value)
 	showIcon(subwooferIcon);
 
 	return;
+}
+
+uint8_t getCmdBuf(void)
+{
+	uint8_t ret = cmdBuf;
+	cmdBuf = CMD_EMPTY;
+
+	return ret;
 }
