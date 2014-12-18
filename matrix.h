@@ -54,11 +54,7 @@ enum {
 void matrixInit(void);
 void matrixClear(void);
 
-void showVolume(int8_t value);
-void showBalance(int8_t value);
-void showFront(int8_t value);
-void showCenter(int8_t value);
-void showSubwoofer(int8_t value);
+void showAudio(uint8_t param);
 
 uint8_t getCmdBuf(void);
 

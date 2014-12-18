@@ -4,6 +4,8 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 
+#include "tda7448.h"
+
 static uint8_t pos;									/* Current position in framebuffer */
 static volatile uint8_t row;						/* Current row being scanned */
 
@@ -12,7 +14,7 @@ static uint8_t screen[ROWS];						/* Screen buffer */
 static volatile uint8_t cmdBuf;
 static volatile uint16_t displayTime;
 
-const static uint8_t dig3x5[] PROGMEM = {
+const static uint8_t font_dig_3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
 	0x12, 0x1F, 0x10, // 1
 	0x1D, 0x15, 0x17, // 2
@@ -73,7 +75,7 @@ static void matrixShowDig(uint8_t dig)				/* Show decimal digit */
 	for (i = 0; i < 3; i++) {
 		if (pos < ROWS) {
 			screen[pos] &= 0xE0;
-			screen[pos] |= pgm_read_byte(dig3x5 + dig * 3 + i);
+			screen[pos] |= pgm_read_byte(font_dig_3x5 + dig * 3 + i);
 			pos++;
 		}
 	}
@@ -140,13 +142,12 @@ static void matrixshowBalBar(int8_t value)
 	return;
 }
 
-static volatile uint8_t btnState;				/* Button state */
-
 ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 {
 	uint8_t i;
 
 	uint8_t btnNow;
+	static volatile uint8_t btnState;				/* Button state */
 	static uint8_t btnPrev = 0;
 	static int16_t btnCnt = 0;						/* Buttons press duration value */
 
@@ -274,7 +275,7 @@ void matrixInit(void)
 	DDR(REG_CLK) |= REG_CLK_LINE;
 
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
-	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);		/* Set timer prescaller to 64 */
+	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);	/* Set timer prescaller to 64 */
 
 	return;
 }
@@ -289,67 +290,38 @@ void matrixClear(void)
 	return;
 }
 
-void showVolume(int8_t value)
+void showAudio(uint8_t param)
 {
+	int8_t value = tda7448GetParam(param);
+
 	matrixShowNumber(value);
 
-	/* Shift scale (-79..0 => 2..81) and normalize volume value */
-	value += 81;
-	value /= 5;
-
-	matrixShowBar(value);
-
-	showIcon(volumeIcon);
-
-	return;
-}
-
-void showBalance(int8_t value)
-{
-	matrixShowNumber(value);
-
-	matrixshowBalBar(value);
-
-	showIcon(balanceIcon);
-
-	return;
-}
-
-void showFront(int8_t value)
-{
-	matrixShowNumber(value);
-
-	matrixshowBalBar(value);
-
-	showIcon(frontIcon);
-
-	return;
-}
-
-void showCenter(int8_t value)
-{
-	matrixShowNumber(value);
-
-	/* Shift scale (-16..0 => 0..16) */
-	value += 16;
-
-	matrixShowBar(value);
-
-	showIcon(centerIcon);
-
-	return;
-}
-
-void showSubwoofer(int8_t value)
-{
-	matrixShowNumber(value);
-
-	/* Shift scale (-16..0 => 0..16) */
-	value += 16;
-
-	matrixShowBar(value);
-
-	showIcon(subwooferIcon);
+	switch (param) {
+	case TDA7448_SND_VOLUME:
+		value += 81;	/* Shift scale (-79..0 => 2..81) */
+		value /= 5;		/* Normalize volume value */
+		matrixShowBar(value);
+		showIcon(volumeIcon);
+		break;
+	case TDA7448_SND_BALANCE:
+		matrixshowBalBar(value);
+		showIcon(balanceIcon);
+		break;
+	case TDA7448_SND_FRONT:
+		matrixshowBalBar(value);
+		showIcon(frontIcon);
+		break;
+	case TDA7448_SND_CENTER:
+		value += 16;	/* Shift scale (-16..0 => 0..16) */
+		matrixShowBar(value);
+		showIcon(centerIcon);
+		break;
+	case TDA7448_SND_SUBWOOFER:
+		value += 16;	/* Shift scale (-16..0 => 0..16) */
+		matrixShowBar(value);
+		showIcon(subwooferIcon);
+		break;
+	}
 
 	return;
 }

@@ -2,35 +2,37 @@
 
 static int8_t sp[TDA7448_CHANNELS];
 
-static int8_t volume;		/* -79..0 dB */
-static int8_t balance;		/*  -8..8 dB */
-static int8_t front;		/*  -8..8 dB */
-static int8_t center;		/* -16..0 dB */
-static int8_t subwoofer;	/* -16..0 dB */
+static tda7448Param tda7448Par[] = {
+	{0, -79, 0},	/* Volume */
+	{0, -8, 8},		/* Balance */
+	{0, -8, 8},		/* Front */
+	{0, -16, 0},	/* Center */
+	{0, -16, 0}		/* Subwoofer */
+};
 
-void setSpeakers(void)
+void tda7448SetSpeakers(void)
 {
 	uint8_t i;
 
 	for (i = 0; i < TDA7448_CHANNELS; i++)
-		sp[i] = volume;
+		sp[i] = tda7448Par[TDA7448_SND_VOLUME].value;
 
-	if (balance > 0) {
-		sp[TDA7448_SP_FRONTLEFT] -= balance;
-		sp[TDA7448_SP_REARLEFT] -= balance;
+	if (tda7448Par[TDA7448_SND_BALANCE].value > 0) {
+		sp[TDA7448_SP_FRONTLEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_SP_REARLEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
 	} else {
-		sp[TDA7448_SP_FRONTRIGHT] += balance;
-		sp[TDA7448_SP_REARRIGHT] += balance;
+		sp[TDA7448_SP_FRONTRIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_SP_REARRIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
 	}
-	if (front > 0) {
-		sp[TDA7448_SP_REARLEFT] -= front;
-		sp[TDA7448_SP_REARRIGHT] -= front;
+	if (tda7448Par[TDA7448_SND_FRONT].value > 0) {
+		sp[TDA7448_SP_REARLEFT] -= tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_SP_REARRIGHT] -= tda7448Par[TDA7448_SND_FRONT].value;
 	} else {
-		sp[TDA7448_SP_FRONTLEFT] += front;
-		sp[TDA7448_SP_FRONTRIGHT] += front;
+		sp[TDA7448_SP_FRONTLEFT] += tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_SP_FRONTRIGHT] += tda7448Par[TDA7448_SND_FRONT].value;
 	}
-	sp[TDA7448_SP_CENTER] += center;
-	sp[TDA7448_SP_SUBWOOFER] += subwoofer;
+	sp[TDA7448_SP_CENTER] += tda7448Par[TDA7448_SND_CENTER].value;
+	sp[TDA7448_SP_SUBWOOFER] += tda7448Par[TDA7448_SND_SUBWOOFER].value;
 
 	for (i = 0; i < TDA7448_CHANNELS; i++) {
 		if (sp[i] < TDA7448_SP_MIN)
@@ -44,147 +46,31 @@ void setSpeakers(void)
 	return;
 }
 
-void incVolume(void)
+void tda7448IncParam(uint8_t param)
 {
-	volume++;
+	tda7448Par[param].value++;
 
-	if (volume > TDA7448_SP_MAX)
-		volume = TDA7448_SP_MAX;
+	if (tda7448Par[param].value > tda7448Par[param].max)
+		tda7448Par[param].value = tda7448Par[param].max;
 
-	setSpeakers();
+	tda7448SetSpeakers();
 
 	return;
 }
 
-void decVolume(void)
+void tda7448DecParam(uint8_t param)
 {
-	volume--;
+	tda7448Par[param].value--;
 
-	if (volume < TDA7448_SP_MIN)
-		volume = TDA7448_SP_MIN;
+	if (tda7448Par[param].value < tda7448Par[param].min)
+		tda7448Par[param].value = tda7448Par[param].min;
 
-	setSpeakers();
+	tda7448SetSpeakers();
 
 	return;
 }
 
-int8_t getVolume(void)
+int8_t tda7448GetParam(uint8_t param)
 {
-	return volume;
-}
-
-void incBalance(void)
-{
-	balance++;
-
-	if (balance > TDA7448_BAL_MAX)
-		balance = TDA7448_BAL_MAX;
-
-	setSpeakers();
-
-	return;
-}
-
-void decBalance(void)
-{
-	balance--;
-
-	if (balance < TDA7448_BAL_MIN)
-		balance = TDA7448_BAL_MIN;
-
-	setSpeakers();
-
-	return;
-}
-
-int8_t getBalance(void)
-{
-	return volume;
-}
-
-void incFront(void)
-{
-	front++;
-
-	if (front > TDA7448_FRONT_MAX)
-		front = TDA7448_FRONT_MAX;
-
-	setSpeakers();
-
-	return;
-}
-
-void decFront(void)
-{
-	front--;
-
-	if (front < TDA7448_FRONT_MIN)
-		front = TDA7448_FRONT_MIN;
-
-	setSpeakers();
-
-	return;
-}
-
-int8_t getFront(void)
-{
-	return front;
-}
-
-void incCenter(void)
-{
-	center++;
-
-	if (center > TDA7448_CENTER_MAX)
-		center = TDA7448_CENTER_MAX;
-
-	setSpeakers();
-
-	return;
-}
-
-void decCenter(void)
-{
-	center--;
-
-	if (center < TDA7448_CENTER_MIN)
-		center = TDA7448_CENTER_MIN;
-
-	setSpeakers();
-
-	return;
-}
-
-int8_t getCenter(void)
-{
-	return center;
-}
-
-void incSubwoofer(void)
-{
-	subwoofer++;
-
-	if (subwoofer > TDA7448_SUB_MAX)
-		subwoofer = TDA7448_SUB_MAX;
-
-	setSpeakers();
-
-	return;
-}
-
-void decSubwoofer(void)
-{
-	subwoofer--;
-
-	if (subwoofer < TDA7448_SUB_MIN)
-		subwoofer = TDA7448_SUB_MIN;
-
-	setSpeakers();
-
-	return;
-}
-
-int8_t getSubwoofer(void)
-{
-	return subwoofer;
+	return tda7448Par[param].value;
 }

@@ -22,62 +22,41 @@ int main(void)
 		case CMD_BTN_0:
 			switch (dispMode) {
 			case MODE_VOLUME:
-				decVolume();
-				break;
 			case MODE_BALANCE:
-				decBalance();
-				break;
 			case MODE_FRONT:
-				decFront();
-				break;
 			case MODE_CENTER:
-				decCenter();
-				break;
 			case MODE_SUBWOOFER:
-				decSubwoofer();
+				tda7448DecParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
+				setDisplayTime(1000);
 				break;
 			}
-			setDisplayTime(1000);
 			break;
 		case CMD_BTN_2:
 			switch (dispMode) {
 			case MODE_VOLUME:
-				incVolume();
-				break;
 			case MODE_BALANCE:
-				incBalance();
-				break;
 			case MODE_FRONT:
-				incFront();
-				break;
 			case MODE_CENTER:
-				incCenter();
-				break;
 			case MODE_SUBWOOFER:
-				incSubwoofer();
+				tda7448IncParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
+				setDisplayTime(1000);
 				break;
 			}
-			setDisplayTime(1000);
 			break;
 		case CMD_BTN_5:
 			switch (dispMode) {
 			case MODE_VOLUME:
-				dispMode = MODE_BALANCE;
-				break;
 			case MODE_BALANCE:
-				dispMode = MODE_FRONT;
-				break;
 			case MODE_FRONT:
-				dispMode = MODE_CENTER;
-				break;
 			case MODE_CENTER:
-				dispMode = MODE_SUBWOOFER;
+				dispMode++;
+				setDisplayTime(2000);
 				break;
-			default:
+			case MODE_SUBWOOFER:
 				dispMode = MODE_VOLUME;
+				setDisplayTime(2000);
 				break;
 			}
-			setDisplayTime(2000);
 			break;
 		}
 
@@ -89,19 +68,11 @@ int main(void)
 		/* Show things */
 		switch (dispMode) {
 		case MODE_VOLUME:
-			showVolume(getVolume());
-			break;
 		case MODE_BALANCE:
-			showBalance(getBalance());
-			break;
 		case MODE_FRONT:
-			showFront(getFront());
-			break;
 		case MODE_CENTER:
-			showCenter(getCenter());
-			break;
 		case MODE_SUBWOOFER:
-			showSubwoofer(getSubwoofer());
+			showAudio(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
 			break;
 		default:
 			break;
