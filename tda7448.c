@@ -46,24 +46,14 @@ void tda7448SetSpeakers(void)
 	return;
 }
 
-void tda7448IncParam(uint8_t param)
+void tda7448ChangeParam(uint8_t param, int8_t diff)
 {
-	tda7448Par[param].value++;
-
-	if (tda7448Par[param].value > tda7448Par[param].max)
-		tda7448Par[param].value = tda7448Par[param].max;
-
-	tda7448SetSpeakers();
-
-	return;
-}
-
-void tda7448DecParam(uint8_t param)
-{
-	tda7448Par[param].value--;
+	tda7448Par[param].value += diff;
 
 	if (tda7448Par[param].value < tda7448Par[param].min)
 		tda7448Par[param].value = tda7448Par[param].min;
+	if (tda7448Par[param].value > tda7448Par[param].max)
+		tda7448Par[param].value = tda7448Par[param].max;
 
 	tda7448SetSpeakers();
 

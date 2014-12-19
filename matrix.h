@@ -14,6 +14,11 @@
 #define BTN_4			(1<<4)
 #define BTN_5			(1<<5)
 
+#define ENC_0			0
+#define ENC_A			(1<<6)
+#define ENC_B			(1<<7)
+#define ENC_AB			(ENC_A | ENC_B)
+
 enum {
 	CMD_RC5_STBY,
 	CMD_RC5_MUTE,
@@ -56,6 +61,7 @@ void matrixClear(void);
 
 void showAudio(uint8_t param);
 
+int8_t getEncoder(void);
 uint8_t getCmdBuf(void);
 
 void setDisplayTime(uint16_t value);

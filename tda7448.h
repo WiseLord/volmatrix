@@ -45,8 +45,7 @@ typedef struct {
 
 void tda7448SetSpeakers(void);
 
-void tda7448IncParam(uint8_t param);
-void tda7448DecParam(uint8_t param);
+void tda7448ChangeParam(uint8_t param, int8_t diff);
 int8_t tda7448GetParam(uint8_t param);
 
 #endif /* TDA7448_H */

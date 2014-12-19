@@ -7,43 +7,46 @@
 int main(void)
 {
 	matrixInit();
+	matrixClear();
 	sei();
 
-	matrixClear();
+	_delay_ms(100);
 
+	int8_t encCnt = 0;
 	uint8_t cmd = CMD_EMPTY;
 	uint8_t dispMode = MODE_STANDBY;
 
 	while(1) {
+		encCnt = getEncoder();
 		cmd = getCmdBuf();
 
 		/* Handle command */
 		switch (cmd) {
+		case CMD_RC5_VOL_DOWN:
+			switch (dispMode) {
+			case MODE_VOLUME:
+			case MODE_BALANCE:
+			case MODE_FRONT:
+			case MODE_CENTER:
+			case MODE_SUBWOOFER:
+				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, -1);
+				setDisplayTime(1000);
+				break;
+			}
+			break;
+		case CMD_RC5_VOL_UP:
+			switch (dispMode) {
+			case MODE_VOLUME:
+			case MODE_BALANCE:
+			case MODE_FRONT:
+			case MODE_CENTER:
+			case MODE_SUBWOOFER:
+				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, +1);
+				setDisplayTime(1000);
+				break;
+			}
+			break;
 		case CMD_BTN_0:
-			switch (dispMode) {
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-			case MODE_SUBWOOFER:
-				tda7448DecParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
-				setDisplayTime(1000);
-				break;
-			}
-			break;
-		case CMD_BTN_2:
-			switch (dispMode) {
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-			case MODE_SUBWOOFER:
-				tda7448IncParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
-				setDisplayTime(1000);
-				break;
-			}
-			break;
-		case CMD_BTN_5:
 			switch (dispMode) {
 			case MODE_VOLUME:
 			case MODE_BALANCE:
@@ -58,6 +61,30 @@ int main(void)
 				break;
 			}
 			break;
+		}
+
+		/* Emulate RC5 VOL_UP/VOL_DOWN as encoder actions */
+		if (cmd == CMD_RC5_VOL_UP)
+			encCnt++;
+		if (cmd == CMD_RC5_VOL_DOWN)
+			encCnt--;
+
+		/* Handle encoder */
+		if (encCnt) {
+			switch (dispMode) {
+			case MODE_STANDBY:
+				break;
+			case MODE_VOLUME:
+			case MODE_BALANCE:
+			case MODE_FRONT:
+			case MODE_CENTER:
+			case MODE_SUBWOOFER:
+				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, encCnt);
+				setDisplayTime(1000);
+				break;
+			default:
+				break;
+			}
 		}
 
 		/* Exid to default mode if timer expired */

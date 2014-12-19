@@ -12,6 +12,7 @@ static volatile uint8_t row;						/* Current row being scanned */
 static uint8_t screen[ROWS];						/* Screen buffer */
 
 static volatile uint8_t cmdBuf;
+static volatile int8_t encCnt;
 static volatile uint16_t displayTime;
 
 const static uint8_t font_dig_3x5[] PROGMEM = {
@@ -146,10 +147,14 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 {
 	uint8_t i;
 
+	static volatile uint8_t stateBtnEnc;			/* Buttons and encoder raw state */
+
 	uint8_t btnNow;
-	static volatile uint8_t btnState;				/* Button state */
-	static uint8_t btnPrev = 0;
+	static uint8_t btnPrev = BTN_STATE_0;
 	static int16_t btnCnt = 0;						/* Buttons press duration value */
+
+	uint8_t encNow;
+	static uint8_t encPrev = ENC_0;
 
 	TCNT0 = 131;
 
@@ -172,11 +177,41 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)
-		btnState &= ~(1<<row);
+		stateBtnEnc &= ~(1<<row);
 	else
-		btnState |= (1<<row);
+		stateBtnEnc |= (1<<row);
 
-	btnNow = btnState & 0x3F;
+	btnNow = stateBtnEnc & 0x3F;
+	encNow = stateBtnEnc & 0xC0;
+
+	/* If encoder event has happened, inc/dec encoder counter */
+	switch (encNow) {
+	case ENC_AB:
+		if (encPrev == ENC_B)
+			encCnt++;
+		if (encPrev == ENC_A)
+			encCnt--;
+		break;
+/*	case ENC_A:
+		if (encPrev == ENC_AB)
+			encCnt++;
+		if (encPrev == ENC_0)
+			encCnt--;
+		break;
+	case ENC_B:
+		if (encPrev == ENC_0)
+			encCnt++;
+		if (encPrev == ENC_AB)
+			encCnt++;
+		break;
+	case ENC_0:
+		if (encPrev == ENC_A)
+			encCnt++;
+		if (encPrev == ENC_B)
+			encCnt++;
+		break;
+*/	}
+	encPrev = encNow;				/* Save current encoder state */
 
 	/* If button event has happened, place it to command buffer */
 	if (btnNow) {
@@ -277,6 +312,9 @@ void matrixInit(void)
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
 	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);	/* Set timer prescaller to 64 */
 
+	cmdBuf = CMD_EMPTY;
+	encCnt = 0;
+
 	return;
 }
 
@@ -324,6 +362,13 @@ void showAudio(uint8_t param)
 	}
 
 	return;
+}
+
+int8_t getEncoder(void)
+{
+	int8_t ret = encCnt;
+	encCnt = 0;
+	return ret;
 }
 
 uint8_t getCmdBuf(void)

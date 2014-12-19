@@ -23,8 +23,8 @@ typedef struct {
 #define ROW_03_LINE		(1<<5)
 #define ROW_04				D
 #define ROW_04_LINE		(1<<4)
-#define ROW_05				D
-#define ROW_05_LINE		(1<<3)
+#define ROW_05				B
+#define ROW_05_LINE		(1<<4)
 #define ROW_06				D
 #define ROW_06_LINE		(1<<2)
 #define ROW_07				D
