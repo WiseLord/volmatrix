@@ -165,15 +165,20 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 		PORT(REG_DATA) |= REG_DATA_LINE;
 	else
 		PORT(REG_DATA) &= ~REG_DATA_LINE;
+
+	for (i = 0; i < ROWS; i++)
+		*ports[i].port &= ~ports[i].mask;
+
+	asm("nop");
 	PORT(REG_CLK) |= REG_CLK_LINE;
 	asm("nop");
+	asm("nop");
 	PORT(REG_CLK) &= ~REG_CLK_LINE;
-	for (i = 0; i < ROWS; i++) {
+	asm("nop");
+
+	for (i = 0; i < ROWS; i++)
 		if (screen[i] & (1<<row))
 			*ports[i].port |= ports[i].mask;
-		else
-			*ports[i].port &= ~ports[i].mask;
-	}
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)
