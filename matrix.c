@@ -143,8 +143,10 @@ static void matrixshowBalBar(int8_t value)
 	return;
 }
 
-ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
+ISR (TIMER0_OVF_vect)
 {
+	TCNT0 = 255 - F_CPU/64/1000/POLL_FREQ;
+
 	uint8_t i;
 
 	static volatile uint8_t stateBtnEnc;			/* Buttons and encoder raw state */
@@ -155,8 +157,6 @@ ISR (TIMER0_OVF_vect)								/* 8000000 / 64 / (256 - 131) = 1kHz */
 
 	uint8_t encNow;
 	static uint8_t encPrev = ENC_0;
-
-	TCNT0 = 131;
 
 	if (++row >= 8)
 		row = 0;
@@ -386,12 +386,12 @@ uint8_t getCmdBuf(void)
 
 void setDisplayTime(uint16_t value)
 {
-	displayTime = value;
+	displayTime = POLL_FREQ * value;
 
 	return;
 }
 
 uint16_t getDisplayTime(void)
 {
-	return displayTime;
+	return displayTime / POLL_FREQ;
 }

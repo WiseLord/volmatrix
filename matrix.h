@@ -52,9 +52,12 @@ enum {
 	MODE_MUTE
 };
 
-// Button press durations */
-#define SHORT_PRESS		100
-#define LONG_PRESS		600
+/* Buttons poll frequency, kHz */
+#define POLL_FREQ		5
+
+/* Button press durations, time(ms) * POLL_FREQ */
+#define SHORT_PRESS		(100 * POLL_FREQ)
+#define LONG_PRESS		(600 * POLL_FREQ)
 
 void matrixInit(void);
 void matrixClear(void);
