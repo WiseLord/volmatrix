@@ -34,5 +34,5 @@ flash: $(TARG)
 	$(AVRDUDE) -p $(MCU) -U flash:w:$(TARG).hex:i
 
 fuse:
-	$(AVRDUDE) -p $(MCU) -U lfuse:w:0xe1:m -U hfuse:w:0xd9:m
+	$(AVRDUDE) -p $(MCU) -U lfuse:w:0xe4:m -U hfuse:w:0xd9:m
 
