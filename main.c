@@ -46,7 +46,7 @@ int main(void)
 				break;
 			}
 			break;
-		case CMD_BTN_0:
+		case CMD_BTN_3:
 			switch (dispMode) {
 			case MODE_VOLUME:
 			case MODE_BALANCE:

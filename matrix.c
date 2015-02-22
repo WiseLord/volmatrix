@@ -186,8 +186,8 @@ ISR (TIMER0_OVF_vect)
 	else
 		stateBtnEnc |= (1<<row);
 
-	btnNow = stateBtnEnc & 0x3F;
-	encNow = stateBtnEnc & 0xC0;
+	btnNow = stateBtnEnc & BTN_ALL;
+	encNow = stateBtnEnc & ENC_AB;
 
 	/* If encoder event has happened, inc/dec encoder counter */
 	switch (encNow) {
@@ -224,23 +224,14 @@ ISR (TIMER0_OVF_vect)
 			btnCnt++;
 			if (btnCnt == LONG_PRESS) {
 				switch (btnPrev) {
-				case (1<<0):
-					cmdBuf = CMD_BTN_0_LONG;
-					break;
-				case (1<<1):
+				case BTN_1:
 					cmdBuf = CMD_BTN_1_LONG;
 					break;
-				case (1<<2):
+				case BTN_2:
 					cmdBuf = CMD_BTN_2_LONG;
 					break;
-				case (1<<3):
+				case BTN_3:
 					cmdBuf = CMD_BTN_3_LONG;
-					break;
-				case (1<<4):
-					cmdBuf = CMD_BTN_4_LONG;
-					break;
-				case (1<<5):
-					cmdBuf = CMD_BTN_5_LONG;
 					break;
 				}
 			}
@@ -250,23 +241,14 @@ ISR (TIMER0_OVF_vect)
 	} else {
 		if ((btnCnt > SHORT_PRESS) && (btnCnt < LONG_PRESS)) {
 			switch (btnPrev) {
-			case (1<<0):
-				cmdBuf = CMD_BTN_0;
-				break;
-			case (1<<1):
+			case BTN_1:
 				cmdBuf = CMD_BTN_1;
 				break;
-			case (1<<2):
+			case BTN_2:
 				cmdBuf = CMD_BTN_2;
 				break;
-			case (1<<3):
+			case BTN_3:
 				cmdBuf = CMD_BTN_3;
-				break;
-			case (1<<4):
-				cmdBuf = CMD_BTN_4;
-				break;
-			case (1<<5):
-				cmdBuf = CMD_BTN_5;
 				break;
 			}
 		}
