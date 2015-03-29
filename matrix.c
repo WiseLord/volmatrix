@@ -50,6 +50,10 @@ const static uint8_t subwooferIcon[] PROGMEM = {
 	0x0C, 0x0F, 0x0F, 0x0F, 0x0C
 };
 
+const static uint8_t muteIcon[] PROGMEM = {
+	0x11, 0x0A, 0x04, 0x0A, 0x11
+};
+
 static avrPort ports[ROWS] = {
 	{&PORT(ROW_01), ROW_01_LINE},
 	{&PORT(ROW_02), ROW_02_LINE},
@@ -349,6 +353,20 @@ void showAudio(uint8_t param)
 		showIcon(subwooferIcon);
 		break;
 	}
+
+	return;
+}
+
+void showMute(void)
+{
+	int8_t value = tda7448GetParam(TDA7448_SND_VOLUME);
+
+	matrixShowNumber(value);
+
+	value += 81;	/* Shift scale (-79..0 => 2..81) */
+	value /= 5;		/* Normalize volume value */
+	matrixShowBar(value);
+	showIcon(muteIcon);
 
 	return;
 }

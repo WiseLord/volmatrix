@@ -44,6 +44,8 @@ enum {
 	MODE_MUTE
 };
 
+#define TIMEOUT_AUDIO		2000
+
 /* Buttons poll frequency, kHz */
 #define POLL_FREQ		5
 
@@ -55,6 +57,7 @@ void matrixInit(void);
 void matrixClear(void);
 
 void showAudio(uint8_t param);
+void showMute(void);
 
 int8_t getEncoder(void);
 uint8_t getCmdBuf(void);
