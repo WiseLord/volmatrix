@@ -3,6 +3,10 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+
+#include "rc5.h"
+#include "eeprom.h"
 
 #include "tda7448.h"
 
@@ -14,6 +18,9 @@ static uint8_t screen[ROWS];						/* Screen buffer */
 static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
 static volatile uint16_t displayTime;
+
+static volatile uint8_t rc5DeviceAddr;
+static volatile uint8_t rcCode[RC5_CMD_COUNT];		/* Array with rc5 commands */
 
 const static uint8_t font_dig_3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
@@ -147,11 +154,23 @@ static void matrixshowBalBar(int8_t value)
 	return;
 }
 
+static uint8_t rc5CmdIndex(uint8_t rc5Cmd)
+{
+	uint8_t i;
+
+	for (i = 0; i < RC5_CMD_COUNT; i++)
+		if (rc5Cmd == rcCode[i])
+			return i;
+
+	return CMD_EMPTY;
+}
+
 ISR (TIMER0_OVF_vect)
 {
 	TCNT0 = 255 - F_CPU/64/1000/POLL_FREQ;
 
 	uint8_t i;
+	static uint16_t rc5Timer;
 
 	static volatile uint8_t stateBtnEnc;			/* Buttons and encoder raw state */
 
@@ -259,9 +278,46 @@ ISR (TIMER0_OVF_vect)
 		btnCnt = 0;
 	}
 
+	/* Place RC5 event to command buffer if enough RC5 timer ticks */
+	uint16_t rc5Buf = getRC5RawBuf();
+
+	static uint8_t togBitNow = 0;
+	static uint8_t togBitPrev = 0;
+
+	uint8_t rc5CmdBuf = CMD_EMPTY;
+	uint8_t rc5Cmd;
+
+	if ((rc5Buf != RC5_BUF_EMPTY) && ((rc5Buf & RC5_ADDR_MASK) >> 6 == rc5DeviceAddr)) {
+		if (rc5Buf & RC5_TOGB_MASK)
+			togBitNow = 1;
+		else
+			togBitNow = 0;
+
+		rc5Cmd = rc5Buf & RC5_COMM_MASK;
+		if ((togBitNow != togBitPrev) || (rc5Timer > RC5_LONG_PRESS)) {
+			rc5Timer = 0;
+			rc5CmdBuf = rc5CmdIndex(rc5Cmd);
+		}
+		if (rc5Cmd == rcCode[CMD_RC5_VOL_UP] || rc5Cmd == rcCode[CMD_RC5_VOL_DOWN]) {
+			if (rc5Timer > RC5_VOL_REPEAT) {
+				rc5Timer = RC5_VOL_DELAY;
+				rc5CmdBuf = rc5CmdIndex(rc5Cmd);
+			}
+		}
+		togBitPrev = togBitNow;
+	}
+
+	if (cmdBuf == CMD_EMPTY) {
+		cmdBuf = rc5CmdBuf;
+	}
+
 	/* Timer of current display mode */
 	if (displayTime)
 		displayTime--;
+
+	/* Time from last IR command */
+	if (rc5Timer < RC5_PRESS_LIMIT)
+		rc5Timer++;
 
 	return;
 }
@@ -280,6 +336,8 @@ static void showIcon(const uint8_t *icon)
 
 void matrixInit(void)
 {
+	uint8_t i;
+
 	DDR(ROW_01) |= ROW_01_LINE;
 	DDR(ROW_02) |= ROW_02_LINE;
 	DDR(ROW_03) |= ROW_03_LINE;
@@ -305,6 +363,11 @@ void matrixInit(void)
 
 	cmdBuf = CMD_EMPTY;
 	encCnt = 0;
+
+	/* Load RC5 device address and commands from eeprom */
+	rc5DeviceAddr = eeprom_read_byte(eepromRC5Addr);
+	for (i = 0; i < RC5_CMD_COUNT; i++)
+		rcCode[i] = eeprom_read_byte(eepromRC5Cmd + i);
 
 	return;
 }

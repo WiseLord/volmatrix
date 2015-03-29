@@ -3,6 +3,7 @@
 
 #include "matrix.h"
 #include "tda7448.h"
+#include "rc5.h"
 
 static uint8_t mute = MUTE_ON;
 static uint8_t stby = STBY_ON;
@@ -29,6 +30,7 @@ static void powerOff(void)
 
 int main(void)
 {
+	rc5Init();
 	matrixInit();
 	matrixClear();
 	sei();
@@ -48,36 +50,13 @@ int main(void)
 		/* Don't handle commands in standby mode */
 		if (dispMode == MODE_STANDBY) {
 			encCnt = 0;
-			if (cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
+			if (cmd != CMD_RC5_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
 				cmd = CMD_EMPTY;
 		}
 
 		/* Handle command */
 		switch (cmd) {
-		case CMD_RC5_VOL_DOWN:
-			switch (dispMode) {
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-			case MODE_SUBWOOFER:
-				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, -1);
-				setDisplayTime(TIMEOUT_AUDIO);
-				break;
-			}
-			break;
-		case CMD_RC5_VOL_UP:
-			switch (dispMode) {
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-			case MODE_SUBWOOFER:
-				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, +1);
-				setDisplayTime(TIMEOUT_AUDIO);
-				break;
-			}
-			break;
+		case CMD_RC5_STBY:
 		case CMD_BTN_1:
 		case CMD_BTN_3_LONG:
 			if (dispMode == MODE_STANDBY) {
@@ -87,6 +66,7 @@ int main(void)
 				tda7448SaveParams();
 			}
 			break;
+		case CMD_RC5_MUTE:
 		case CMD_BTN_2:
 			if (mute == MUTE_OFF) {
 				mute = MUTE_ON;
@@ -98,6 +78,7 @@ int main(void)
 			setDisplayTime(TIMEOUT_AUDIO);
 			tda7448SetMute(mute);
 			break;
+		case CMD_RC5_MENU:
 		case CMD_BTN_3:
 			switch (dispMode) {
 			case MODE_VOLUME:

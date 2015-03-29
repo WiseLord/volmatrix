@@ -17,6 +17,9 @@
 #define ENC_B				(1<<0)
 #define ENC_AB				(ENC_A | ENC_B)
 
+/* RC5 support definitions */
+#define RC5_CMD_COUNT	5
+
 enum {
 	CMD_RC5_STBY,
 	CMD_RC5_MUTE,
@@ -53,6 +56,11 @@ enum {
 /* Button press durations, time(ms) * POLL_FREQ */
 #define SHORT_PRESS			(100 * POLL_FREQ)
 #define LONG_PRESS			(600 * POLL_FREQ)
+
+#define RC5_LONG_PRESS		(800 * POLL_FREQ)
+#define RC5_VOL_DELAY		(360 * POLL_FREQ)
+#define RC5_VOL_REPEAT		(400 * POLL_FREQ)
+#define RC5_PRESS_LIMIT		(1000 * POLL_FREQ)
 
 void matrixInit(void);
 void matrixClear(void);

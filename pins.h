@@ -57,4 +57,7 @@ typedef struct {
 #define BUTTON				D
 #define BUTTON_LINE		(1<<2)
 
+#define RC5					D
+#define RC5_LINE		(1<<3)
+
 #endif /* PINS_H */

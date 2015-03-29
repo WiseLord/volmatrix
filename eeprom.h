@@ -8,5 +8,9 @@
 #define eepromCenter			((void*)0x03)
 #define eepromSubwoofer			((void*)0x04)
 
+/* RC5 address and command */
+#define eepromRC5Addr			((void*)0x10)
+#define eepromRC5Cmd			((uint8_t*)0x20)
+
 #endif /* EEPROM_H */
 
