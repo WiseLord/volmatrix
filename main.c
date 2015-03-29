@@ -4,6 +4,29 @@
 #include "matrix.h"
 #include "tda7448.h"
 
+static uint8_t mute = MUTE_ON;
+static uint8_t stby = STBY_ON;
+static uint8_t dispMode = MODE_STANDBY;
+
+static void powerOn(void)
+{
+	stby = STBY_OFF;
+	mute = MUTE_OFF;
+	tda7448SetMute(mute);
+	dispMode = MODE_VOLUME;
+	setDisplayTime(TIMEOUT_AUDIO);
+}
+
+static void powerOff(void)
+{
+	stby = STBY_ON;
+	mute = MUTE_ON;
+	tda7448SetMute(mute);
+	dispMode = MODE_STANDBY;
+	setDisplayTime(TIMEOUT_STBY);
+	matrixClear();
+}
+
 int main(void)
 {
 	matrixInit();
@@ -14,12 +37,19 @@ int main(void)
 
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_EMPTY;
-	uint8_t dispMode = MODE_STANDBY;
-	uint8_t mute = MUTE_OFF;
+
+	powerOff();
 
 	while(1) {
 		encCnt = getEncoder();
 		cmd = getCmdBuf();
+
+		/* Don't handle commands in standby mode */
+		if (dispMode == MODE_STANDBY) {
+			encCnt = 0;
+			if (cmd != CMD_BTN_1)
+				cmd = CMD_EMPTY;
+		}
 
 		/* Handle command */
 		switch (cmd) {
@@ -46,6 +76,12 @@ int main(void)
 				setDisplayTime(TIMEOUT_AUDIO);
 				break;
 			}
+			break;
+		case CMD_BTN_1:
+			if (dispMode == MODE_STANDBY)
+				powerOn();
+			else
+				powerOff();
 			break;
 		case CMD_BTN_2:
 			if (mute == MUTE_OFF) {
@@ -103,7 +139,7 @@ int main(void)
 		}
 
 		/* Exid to default mode if timer expired */
-		if (getDisplayTime() == 0) {
+		if (getDisplayTime() == 0 && dispMode != MODE_STANDBY) {
 			dispMode = MODE_VOLUME;
 		}
 
@@ -119,6 +155,9 @@ int main(void)
 		case MODE_MUTE:
 			showMute();
 			setDisplayTime(TIMEOUT_AUDIO);
+			break;
+		case MODE_STANDBY:
+			setDisplayTime(TIMEOUT_STBY);
 			break;
 		default:
 			break;

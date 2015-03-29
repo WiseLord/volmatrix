@@ -31,6 +31,8 @@ typedef struct {
 
 #define MUTE_ON						1
 #define MUTE_OFF					0
+#define STBY_ON						1
+#define STBY_OFF					0
 
 /* I2C autoincrement flag */
 #define TDA7448_AUTO_INC			0x10
