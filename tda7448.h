@@ -3,13 +3,16 @@
 
 #include <inttypes.h>
 
+/* I2C address */
+#define TDA7448_I2C_ADDR			0b10001000
+
 enum {
-	TDA7448_SP_FRONTLEFT,
-	TDA7448_SP_FRONTRIGHT,
-	TDA7448_SP_REARLEFT,
-	TDA7448_SP_REARRIGHT,
-	TDA7448_SP_CENTER,
-	TDA7448_SP_SUBWOOFER
+	TDA7448_REAR_LEFT = 0,
+	TDA7448_REAR_RIGHT,
+	TDA7448_FRONT_RIGHT,
+	TDA7448_CENTER,
+	TDA7448_FRONT_LEFT,
+	TDA7448_SUBWOOFER
 };
 
 enum {
@@ -26,24 +29,19 @@ typedef struct {
 	int8_t max;
 } tda7448Param;
 
-#define TDA7448_CHANNELS	6
+#define MUTE_ON						1
+#define MUTE_OFF					0
 
-#define TDA7448_SP_MIN		-79
-#define TDA7448_SP_MAX		0
-
-#define TDA7448_BAL_MIN		-8
-#define TDA7448_BAL_MAX		8
-
-#define TDA7448_FRONT_MIN	-8
-#define TDA7448_FRONT_MAX	8
-
-#define TDA7448_CENTER_MIN	-16
-#define TDA7448_CENTER_MAX	0
-
-#define TDA7448_SUB_MIN		-16
-#define TDA7448_SUB_MAX		0
+/* I2C autoincrement flag */
+#define TDA7448_AUTO_INC			0x10
+/* Mute value */
+#define TDA7448_MUTE				0xC0
+/* Number of inputs */
+#define TDA7448_LINES_COUNT			6
 
 void tda7448SetSpeakers(void);
+
+void tda7448SetMute(uint8_t val);
 
 void tda7448ChangeParam(uint8_t param, int8_t diff);
 int8_t tda7448GetParam(uint8_t param);

@@ -1,46 +1,70 @@
 #include "tda7448.h"
+#include "i2c.h"
 
-static int8_t sp[TDA7448_CHANNELS];
+static int8_t sp[TDA7448_LINES_COUNT];
 
 static tda7448Param tda7448Par[] = {
-	{0, -79, 0},	/* Volume */
-	{0, -8, 8},		/* Balance */
-	{0, -8, 8},		/* Front */
-	{0, -16, 0},	/* Center */
-	{0, -16, 0}		/* Subwoofer */
+	{0, -79, 0},		/* Volume */
+	{0, -16, 16},		/* Balance */
+	{0, -16, 16},		/* Front */
+	{0, -16, 0},		/* Center */
+	{0, -16, 0}			/* Subwoofer */
 };
 
 void tda7448SetSpeakers(void)
 {
 	uint8_t i;
+	uint8_t i2cData;
 
-	for (i = 0; i < TDA7448_CHANNELS; i++)
+	for (i = 0; i < TDA7448_LINES_COUNT; i++)
 		sp[i] = tda7448Par[TDA7448_SND_VOLUME].value;
 
 	if (tda7448Par[TDA7448_SND_BALANCE].value > 0) {
-		sp[TDA7448_SP_FRONTLEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
-		sp[TDA7448_SP_REARLEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_FRONT_LEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_REAR_LEFT] -= tda7448Par[TDA7448_SND_BALANCE].value;
 	} else {
-		sp[TDA7448_SP_FRONTRIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
-		sp[TDA7448_SP_REARRIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_FRONT_RIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
+		sp[TDA7448_REAR_RIGHT] += tda7448Par[TDA7448_SND_BALANCE].value;
 	}
 	if (tda7448Par[TDA7448_SND_FRONT].value > 0) {
-		sp[TDA7448_SP_REARLEFT] -= tda7448Par[TDA7448_SND_FRONT].value;
-		sp[TDA7448_SP_REARRIGHT] -= tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_REAR_LEFT] -= tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_REAR_RIGHT] -= tda7448Par[TDA7448_SND_FRONT].value;
 	} else {
-		sp[TDA7448_SP_FRONTLEFT] += tda7448Par[TDA7448_SND_FRONT].value;
-		sp[TDA7448_SP_FRONTRIGHT] += tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_FRONT_LEFT] += tda7448Par[TDA7448_SND_FRONT].value;
+		sp[TDA7448_FRONT_RIGHT] += tda7448Par[TDA7448_SND_FRONT].value;
 	}
-	sp[TDA7448_SP_CENTER] += tda7448Par[TDA7448_SND_CENTER].value;
-	sp[TDA7448_SP_SUBWOOFER] += tda7448Par[TDA7448_SND_SUBWOOFER].value;
+	sp[TDA7448_CENTER] += tda7448Par[TDA7448_SND_CENTER].value;
+	sp[TDA7448_SUBWOOFER] += tda7448Par[TDA7448_SND_SUBWOOFER].value;
 
-	for (i = 0; i < TDA7448_CHANNELS; i++) {
-		if (sp[i] < TDA7448_SP_MIN)
-			sp[i] = TDA7448_SP_MIN;
+	I2CStart(TDA7448_I2C_ADDR);
+	I2CWriteByte(TDA7448_AUTO_INC);
+	for (i = 0; i < TDA7448_LINES_COUNT; i++) {
+		/* Limit values sent to bus */
+		if (sp[i] < tda7448Par[TDA7448_SND_VOLUME].min)
+			sp[i] = tda7448Par[TDA7448_SND_VOLUME].min;
+		i2cData = -sp[i];
+		/* Jump at -72db in raw data according the datasheet */
+		if (i2cData >= 72)
+			i2cData += 56;
+		I2CWriteByte(i2cData);
 	}
+	I2CStop();
 
-	for (i = 0; i < TDA7448_CHANNELS; i++) {
-		// Write to I2C
+	return;
+}
+
+void tda7448SetMute(uint8_t val)
+{
+	uint8_t i;
+
+	if (val == MUTE_ON) {
+		I2CStart(TDA7448_I2C_ADDR);
+		I2CWriteByte(TDA7448_AUTO_INC);
+		for (i = 0; i < TDA7448_LINES_COUNT; i++)
+			I2CWriteByte(TDA7448_MUTE);
+		I2CStop();
+	} else {
+		tda7448SetSpeakers();
 	}
 
 	return;

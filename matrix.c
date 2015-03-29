@@ -329,10 +329,12 @@ void showAudio(uint8_t param)
 		showIcon(volumeIcon);
 		break;
 	case TDA7448_SND_BALANCE:
+		value /= 2;
 		matrixshowBalBar(value);
 		showIcon(balanceIcon);
 		break;
 	case TDA7448_SND_FRONT:
+		value /= 2;
 		matrixshowBalBar(value);
 		showIcon(frontIcon);
 		break;
