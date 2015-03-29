@@ -38,6 +38,7 @@ int main(void)
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_EMPTY;
 
+	tda7448LoadParams();
 	powerOff();
 
 	while(1) {
@@ -47,7 +48,7 @@ int main(void)
 		/* Don't handle commands in standby mode */
 		if (dispMode == MODE_STANDBY) {
 			encCnt = 0;
-			if (cmd != CMD_BTN_1)
+			if (cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
 				cmd = CMD_EMPTY;
 		}
 
@@ -78,10 +79,13 @@ int main(void)
 			}
 			break;
 		case CMD_BTN_1:
-			if (dispMode == MODE_STANDBY)
+		case CMD_BTN_3_LONG:
+			if (dispMode == MODE_STANDBY) {
 				powerOn();
-			else
+			} else {
 				powerOff();
+				tda7448SaveParams();
+			}
 			break;
 		case CMD_BTN_2:
 			if (mute == MUTE_OFF) {
@@ -140,7 +144,10 @@ int main(void)
 
 		/* Exid to default mode if timer expired */
 		if (getDisplayTime() == 0 && dispMode != MODE_STANDBY) {
-			dispMode = MODE_VOLUME;
+			if (mute == MUTE_ON)
+				dispMode = MODE_MUTE;
+			else
+				dispMode = MODE_VOLUME;
 		}
 
 		/* Show things */
@@ -154,10 +161,8 @@ int main(void)
 			break;
 		case MODE_MUTE:
 			showMute();
-			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case MODE_STANDBY:
-			setDisplayTime(TIMEOUT_STBY);
 			break;
 		default:
 			break;

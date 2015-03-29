@@ -41,6 +41,9 @@ typedef struct {
 /* Number of inputs */
 #define TDA7448_LINES_COUNT			6
 
+void tda7448LoadParams(void);
+void tda7448SaveParams(void);
+
 void tda7448SetSpeakers(void);
 
 void tda7448SetMute(uint8_t val);

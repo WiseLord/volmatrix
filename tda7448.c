@@ -1,6 +1,9 @@
 #include "tda7448.h"
 #include "i2c.h"
 
+#include <avr/eeprom.h>
+#include "eeprom.h"
+
 static int8_t sp[TDA7448_LINES_COUNT];
 
 static tda7448Param tda7448Par[] = {
@@ -10,6 +13,26 @@ static tda7448Param tda7448Par[] = {
 	{0, -16, 0},		/* Center */
 	{0, -16, 0}			/* Subwoofer */
 };
+
+void tda7448LoadParams(void)
+{
+	uint8_t i;
+
+	for (i = 0; i < 5; i++)
+		tda7448Par[i].value = eeprom_read_byte(eepromVolume + i);
+
+	return;
+}
+
+void tda7448SaveParams(void)
+{
+	uint8_t i;
+
+	for (i = 0; i < 5; i++)
+		eeprom_update_byte(eepromVolume + i, tda7448Par[i].value);
+
+	return;
+}
 
 void tda7448SetSpeakers(void)
 {
