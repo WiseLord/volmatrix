@@ -46,7 +46,7 @@ flash: $(TARG)
 	$(AVRDUDE) -p $(MCU) -U flash:w:$(TARG).hex:i
 
 eeprom:
-	$(AVRDUDE) -p $(MCU) -U eeprom:w:$(TARG).bin:r
+	$(AVRDUDE) -p $(MCU) -U eeprom:w:eeprom.bin:r
 
 fuse:
 	$(AVRDUDE) -p $(MCU) -U lfuse:w:0x24:m -U hfuse:w:0xD1:m
