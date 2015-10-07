@@ -1,53 +1,70 @@
-TARG = volmatrix
+# Output file name
+TARG     = volmatrix
 
-MCU = atmega8
-F_CPU = 8000000
+# MCU name and frequency
+MCU      = atmega8
+F_CPU    = 8000000
 
 # Source files
-SRCS = $(wildcard *.c)
+SRCS     = $(wildcard *.c)
+
+# Build directory
+BUILDDIR = build
 
 # Compiler options
 OPTIMIZE = -Os -mcall-prologues -fshort-enums -ffunction-sections -fdata-sections
-DEBUG = -g -Wall -Werror
-CFLAGS = $(DEBUG) -lm $(OPTIMIZE) -mmcu=$(MCU) -DF_CPU=$(F_CPU)
-LDFLAGS = $(DEBUG) -mmcu=$(MCU) -Wl,-gc-sections
+DEBUG    = -g -Wall -Werror
+DEPS     = -MMD -MP -MT $(BUILDDIR)/$(*F).o -MF $(BUILDDIR)/$(*D)/$(*F).d
+CFLAGS   = $(DEBUG) -lm $(OPTIMIZE) $(DEPS) -mmcu=$(MCU) -DF_CPU=$(F_CPU)
+LDFLAGS  = $(DEBUG) -mmcu=$(MCU) -Wl,-gc-sections -mrelax
 
 # AVR toolchain and flasher
-CC = avr-gcc
-OBJCOPY = avr-objcopy
-AVRDUDE = avrdude
-AD_MCU = -p $(MCU)
+CC       = avr-gcc
+OBJCOPY  = avr-objcopy
+OBJDUMP  = avr-objdump
+
+# AVRDude parameters
+AVRDUDE  = avrdude
+AD_MCU   = -p $(MCU)
 #AD_PROG = -c stk500v2
 #AD_PORT = -P avrdoper
 
-AD_CMDLINE = $(AD_MCU) $(AD_PROG) $(AD_PORT) -V
+AD_CMD   = $(AD_MCU) $(AD_PROG) $(AD_PORT) -V
 
-OBJDIR = obj
-OBJS = $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
-ELF = $(OBJDIR)/$(TARG).elf
+# Build objects
+OBJS     = $(addprefix $(BUILDDIR)/, $(SRCS:.c=.o))
+ELF      = $(BUILDDIR)/$(TARG).elf
 
-all: $(TARG)
+# Dependencies
+-include $(OBJS:.o=.d)
 
-$(TARG): dirs $(OBJS)
-	$(CC) $(LDFLAGS) -o $@.elf  $(OBJS) -lm
-	$(OBJCOPY) -O ihex -R .eeprom -R .nwram  $@.elf $@.hex
-	sh ./size.sh $@.elf
+all: $(ELF) size
 
-dirs:
-	mkdir -p $(OBJDIR)
+$(ELF): $(OBJS)
+	@mkdir -p $(BUILDDIR) flash
+	$(CC) $(LDFLAGS) -o $(ELF) $(OBJS) -lm
+	$(OBJCOPY) -O ihex -R .eeprom -R .nwram $(ELF) flash/$(TARG).hex
+	$(OBJDUMP) -h -S $(ELF) > $(BUILDDIR)/$(TARG).lss
 
-obj/%.o: %.c
+size:
+	@sh ./size.sh $(ELF)
+
+$(BUILDDIR)/%.o: %.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+.PHONY: clean
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(BUILDDIR)
 
-flash: $(TARG)
-	$(AVRDUDE) -p $(MCU) -U flash:w:$(TARG).hex:i
+.PHONY: flash
+flash: $(ELF)
+	$(AVRDUDE) $(AD_CMD) -U flash:w:flash/$(TARG).hex:i
 
-eeprom:
-	$(AVRDUDE) -p $(MCU) -U eeprom:w:eeprom.bin:r
+.PHONY: eeprom
+eeprom: $(ELF)
+	$(AVRDUDE) $(AD_CMD) -U eeprom:w:eeprom/$(TARG).bin:r
 
+.PHONY: fuse
 fuse:
-	$(AVRDUDE) -p $(MCU) -U lfuse:w:0x24:m -U hfuse:w:0xD1:m
-
+	$(AVRDUDE) $(AD_CMD) -U lfuse:w:0x24:m -U hfuse:w:0xD1:m
