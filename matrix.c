@@ -7,8 +7,7 @@
 
 #include "rc5.h"
 #include "eeprom.h"
-
-#include "tda7448.h"
+#include "icons.h"
 
 static uint8_t pos;									/* Current position in framebuffer */
 static volatile uint8_t row;						/* Current row being scanned */
@@ -139,12 +138,12 @@ static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 	return;
 }
 
-static void matrixshowBalBar(int8_t value)
+static void matrixShowSymBar(int8_t value)
 {
 	uint8_t i;
 
 	for (i = 0; i < 16; i++) {
-		if ((i < 8 && value < i - 7) || (i >= 8 && value > i - 8))
+		if ((value && ((i < 8 && value < i - 7) || (i >= 8 && value > i - 8))) || (!value && (i == 7 || i == 8)))
 			screen[i] |= 0xC0;
 		else
 			screen[i] &= ~0xC0;
@@ -322,13 +321,22 @@ ISR (TIMER0_OVF_vect)
 	return;
 }
 
-static void showIcon(const uint8_t *icon)
+static void showIcon(const uint8_t iconNum)
 {
 	uint8_t i;
+	uint8_t pgmData;
 
-	for (i = 0; i < 5; i++) {
-		screen[i] &= 0xE0;
-		screen[i] |= pgm_read_byte(icon + i);
+	const uint8_t *icon;
+
+	icon = &icons[5 * iconNum];
+
+	if (icon) {
+		for (i = 0; i < 5; i++) {
+			pgmData = pgm_read_byte(icon + i);
+			pgmData &= 0x01F;
+			screen[i] &= 0xE0;
+			screen[i] |= pgmData;
+		}
 	}
 
 	return;
@@ -382,39 +390,26 @@ void matrixClear(void)
 	return;
 }
 
-void showAudio(uint8_t param)
+void showSndParam(sndMode mode)
 {
-	int8_t value = tda7448GetParam(param);
+	sndParam *param = sndParAddr(mode);
+	int16_t value = param->value;
+	int8_t min = pgm_read_byte(&param->grid->min);
+	int8_t max = pgm_read_byte(&param->grid->max);
 
-	matrixShowNumber(value);
+	showIcon(param->icon);
+	matrixShowNumber(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
 
-	switch (param) {
-	case TDA7448_SND_VOLUME:
-		value += 81;	/* Shift scale (-79..0 => 2..81) */
-		value /= 5;		/* Normalize volume value */
+	if (min + max) {
+		max -= min;
+		value -= min;
+		value *= 17;
+		value /= max;
 		matrixShowBar(value);
-		showIcon(volumeIcon);
-		break;
-	case TDA7448_SND_BALANCE:
-		value /= 2;
-		matrixshowBalBar(value);
-		showIcon(balanceIcon);
-		break;
-	case TDA7448_SND_FRONT:
-		value /= 2;
-		matrixshowBalBar(value);
-		showIcon(frontIcon);
-		break;
-	case TDA7448_SND_CENTER:
-		value += 16;	/* Shift scale (-16..0 => 0..16) */
-		matrixShowBar(value);
-		showIcon(centerIcon);
-		break;
-	case TDA7448_SND_SUBWOOFER:
-		value += 16;	/* Shift scale (-16..0 => 0..16) */
-		matrixShowBar(value);
-		showIcon(subwooferIcon);
-		break;
+	} else {
+		value *= 9;
+		value /= max;
+		matrixShowSymBar(value);
 	}
 
 	return;
@@ -422,14 +417,12 @@ void showAudio(uint8_t param)
 
 void showMute(void)
 {
-	int8_t value = tda7448GetParam(TDA7448_SND_VOLUME);
+	sndParam *param = sndParAddr(MODE_SND_VOLUME);
 
-	matrixShowNumber(value);
+	showIcon(ICON_MUTE);
+	matrixShowNumber(param->value);
 
-	value += 81;	/* Shift scale (-79..0 => 2..81) */
-	value /= 5;		/* Normalize volume value */
-	matrixShowBar(value);
-	showIcon(muteIcon);
+	matrixShowBar(0);
 
 	return;
 }

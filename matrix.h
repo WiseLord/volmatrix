@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include "pins.h"
 
+#include "audio/audioproc.h"
+
 #define ROWS				16
 
 #define BTN_STATE_0			0
@@ -38,12 +40,8 @@ enum {
 };
 
 enum {
-	MODE_STANDBY,
-	MODE_VOLUME,
-	MODE_BALANCE,
-	MODE_FRONT,
-	MODE_CENTER,
-	MODE_SUBWOOFER,
+	MODE_STANDBY = MODE_SND_END,
+
 	MODE_MUTE
 };
 
@@ -65,7 +63,7 @@ enum {
 void matrixInit(void);
 void matrixClear(void);
 
-void showAudio(uint8_t param);
+void showSndParam(sndMode mode);
 void showMute(void);
 
 int8_t getEncoder(void);

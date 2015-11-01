@@ -2,8 +2,11 @@
 #include <util/delay.h>
 
 #include "matrix.h"
-#include "tda7448.h"
+#include "audio/audioproc.h"
 #include "rc5.h"
+
+#define STBY_ON						1
+#define STBY_OFF					0
 
 static uint8_t mute = MUTE_ON;
 static uint8_t stby = STBY_ON;
@@ -13,8 +16,8 @@ static void powerOn(void)
 {
 	stby = STBY_OFF;
 	mute = MUTE_OFF;
-	tda7448SetMute(mute);
-	dispMode = MODE_VOLUME;
+	sndSetMute(mute);
+	dispMode = MODE_SND_VOLUME;
 	setDisplayTime(TIMEOUT_AUDIO);
 }
 
@@ -22,7 +25,7 @@ static void powerOff(void)
 {
 	stby = STBY_ON;
 	mute = MUTE_ON;
-	tda7448SetMute(mute);
+	sndSetMute(mute);
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
 	matrixClear();
@@ -31,6 +34,7 @@ static void powerOff(void)
 int main(void)
 {
 	rc5Init();
+	sndInit();
 	matrixInit();
 	matrixClear();
 	sei();
@@ -40,8 +44,8 @@ int main(void)
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_EMPTY;
 
-	tda7448LoadParams();
-	powerOff();
+	sndInit();
+	powerOn();
 
 	while(1) {
 		encCnt = getEncoder();
@@ -63,7 +67,7 @@ int main(void)
 				powerOn();
 			} else {
 				powerOff();
-				tda7448SaveParams();
+				sndPowerOff();
 			}
 			break;
 		case CMD_RC5_MUTE:
@@ -73,26 +77,15 @@ int main(void)
 				dispMode = MODE_MUTE;
 			} else {
 				mute = MUTE_OFF;
-				dispMode = MODE_VOLUME;
+				dispMode = MODE_SND_VOLUME;
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
-			tda7448SetMute(mute);
+			sndSetMute(mute);
 			break;
 		case CMD_RC5_MENU:
 		case CMD_BTN_3:
-			switch (dispMode) {
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-				dispMode++;
-				setDisplayTime(TIMEOUT_AUDIO);
-				break;
-			default:
-				dispMode = MODE_VOLUME;
-				setDisplayTime(TIMEOUT_AUDIO);
-				break;
-			}
+			sndNextParam(&dispMode);
+			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		}
 
@@ -108,17 +101,11 @@ int main(void)
 			case MODE_STANDBY:
 				break;
 			case MODE_MUTE:
-				dispMode = MODE_VOLUME;
-			case MODE_VOLUME:
-			case MODE_BALANCE:
-			case MODE_FRONT:
-			case MODE_CENTER:
-			case MODE_SUBWOOFER:
-				mute = MUTE_OFF;
-				tda7448ChangeParam(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME, encCnt);
-				setDisplayTime(TIMEOUT_AUDIO);
-				break;
+				dispMode = MODE_SND_VOLUME;
 			default:
+				sndSetMute(MUTE_OFF);
+				sndChangeParam(dispMode, encCnt);
+				setDisplayTime(TIMEOUT_AUDIO);
 				break;
 			}
 		}
@@ -128,24 +115,18 @@ int main(void)
 			if (mute == MUTE_ON)
 				dispMode = MODE_MUTE;
 			else
-				dispMode = MODE_VOLUME;
+				dispMode = MODE_SND_VOLUME;
 		}
 
 		/* Show things */
 		switch (dispMode) {
-		case MODE_VOLUME:
-		case MODE_BALANCE:
-		case MODE_FRONT:
-		case MODE_CENTER:
-		case MODE_SUBWOOFER:
-			showAudio(TDA7448_SND_VOLUME + dispMode - MODE_VOLUME);
+		case MODE_STANDBY:
 			break;
 		case MODE_MUTE:
 			showMute();
 			break;
-		case MODE_STANDBY:
-			break;
 		default:
+			showSndParam(dispMode);
 			break;
 		}
 	}
