@@ -19,15 +19,19 @@
 #define ENC_B				(1<<0)
 #define ENC_AB				(ENC_A | ENC_B)
 
-/* RC5 support definitions */
-#define RC5_CMD_COUNT	5
-
 enum {
 	CMD_RC5_STBY,
 	CMD_RC5_MUTE,
 	CMD_RC5_MENU,
 	CMD_RC5_VOL_UP,
 	CMD_RC5_VOL_DOWN,
+	CMD_RC5_RED,
+	CMD_RC5_GREEN,
+	CMD_RC5_YELLOW,
+	CMD_RC5_BLUE,
+	CMD_RC5_NEXT,
+
+	CMD_RC5_END,
 
 	CMD_BTN_1,
 	CMD_BTN_2,
@@ -42,7 +46,15 @@ enum {
 enum {
 	MODE_STANDBY = MODE_SND_END,
 
-	MODE_MUTE
+	MODE_MUTE,
+	MODE_LOUDNESS,
+
+	MODE_END
+};
+
+enum {
+	ICON_NATIVE,
+	ICON_OTHER
 };
 
 #define TIMEOUT_AUDIO		2000
@@ -61,10 +73,12 @@ enum {
 #define RC5_PRESS_LIMIT		(1000 * POLL_FREQ)
 
 void matrixInit(void);
-void matrixClear(void);
+void matrixFill(uint8_t data);
+void matrixFadeOff(void);
 
-void showSndParam(sndMode mode);
+void showSndParam(sndMode mode, uint8_t icon);
 void showMute(void);
+void showLoudness(void);
 
 int8_t getEncoder(void);
 uint8_t getCmdBuf(void);

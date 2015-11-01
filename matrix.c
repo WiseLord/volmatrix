@@ -4,6 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
+#include <util/delay.h>
 
 #include "rc5.h"
 #include "eeprom.h"
@@ -19,7 +20,7 @@ static volatile int8_t encCnt;
 static volatile uint16_t displayTime;
 
 static volatile uint8_t rc5DeviceAddr;
-static volatile uint8_t rcCode[RC5_CMD_COUNT];		/* Array with rc5 commands */
+static volatile uint8_t rcCode[CMD_RC5_END];		/* Array with rc5 commands */
 
 const static uint8_t font_dig_3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
@@ -157,7 +158,7 @@ static uint8_t rc5CmdIndex(uint8_t rc5Cmd)
 {
 	uint8_t i;
 
-	for (i = 0; i < RC5_CMD_COUNT; i++)
+	for (i = 0; i < CMD_RC5_END; i++)
 		if (rc5Cmd == rcCode[i])
 			return i;
 
@@ -374,30 +375,44 @@ void matrixInit(void)
 
 	/* Load RC5 device address and commands from eeprom */
 	rc5DeviceAddr = eeprom_read_byte(eepromRC5Addr);
-	for (i = 0; i < RC5_CMD_COUNT; i++)
+	for (i = 0; i < CMD_RC5_END; i++)
 		rcCode[i] = eeprom_read_byte(eepromRC5Cmd + i);
 
 	return;
 }
 
-void matrixClear(void)
+void matrixFill(uint8_t data)
 {
 	uint8_t i;
 
 	for (i = 0; i < ROWS; i++)
-		screen[i] = 0x00;
+		screen[i] = data;
 
 	return;
 }
 
-void showSndParam(sndMode mode)
+void matrixFadeOff(void)
+{
+	uint8_t i;
+
+	for (i = 0; i < 8; i++) {
+		_delay_ms(10);
+		screen[i] = 0;
+		screen[15 - i] = 0;
+	}
+
+	return;
+}
+
+void showSndParam(sndMode mode, uint8_t icon)
 {
 	sndParam *param = sndParAddr(mode);
 	int16_t value = param->value;
 	int8_t min = pgm_read_byte(&param->grid->min);
 	int8_t max = pgm_read_byte(&param->grid->max);
 
-	showIcon(param->icon);
+	if (icon == ICON_NATIVE)
+		showIcon(param->icon);
 	matrixShowNumber(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
 
 	if (min + max) {
@@ -417,12 +432,16 @@ void showSndParam(sndMode mode)
 
 void showMute(void)
 {
-	sndParam *param = sndParAddr(MODE_SND_VOLUME);
-
+	showSndParam(MODE_SND_VOLUME, ICON_OTHER);
 	showIcon(ICON_MUTE);
-	matrixShowNumber(param->value);
 
-	matrixShowBar(0);
+	return;
+}
+
+void showLoudness(void)
+{
+	showSndParam(MODE_SND_VOLUME, ICON_OTHER);
+	showIcon(ICON_LOUDNESS);
 
 	return;
 }

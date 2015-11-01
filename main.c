@@ -26,9 +26,10 @@ static void powerOff(void)
 	stby = STBY_ON;
 	mute = MUTE_ON;
 	sndSetMute(mute);
+	sndPowerOff();
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
-	matrixClear();
+	matrixFadeOff();
 }
 
 int main(void)
@@ -36,16 +37,16 @@ int main(void)
 	rc5Init();
 	sndInit();
 	matrixInit();
-	matrixClear();
 	sei();
 
+	matrixFill(0xFF);
 	_delay_ms(100);
+	powerOff();
+	sndInit();
 
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_EMPTY;
-
-	sndInit();
-	powerOn();
+	uint8_t input;
 
 	while(1) {
 		encCnt = getEncoder();
@@ -62,13 +63,10 @@ int main(void)
 		switch (cmd) {
 		case CMD_RC5_STBY:
 		case CMD_BTN_1:
-		case CMD_BTN_3_LONG:
-			if (dispMode == MODE_STANDBY) {
+			if (dispMode == MODE_STANDBY)
 				powerOn();
-			} else {
+			else
 				powerOff();
-				sndPowerOff();
-			}
 			break;
 		case CMD_RC5_MUTE:
 		case CMD_BTN_2:
@@ -85,6 +83,45 @@ int main(void)
 		case CMD_RC5_MENU:
 		case CMD_BTN_3:
 			sndNextParam(&dispMode);
+			setDisplayTime(TIMEOUT_AUDIO);
+			break;
+		case CMD_RC5_RED:
+		case CMD_RC5_GREEN:
+		case CMD_RC5_YELLOW:
+		case CMD_RC5_BLUE:
+			if (cmd == CMD_RC5_BLUE && sndInputCnt() < 4) {
+				if (sndGetLoudness()) {
+					sndSetLoudness(LOUDNESS_OFF);
+					dispMode = MODE_SND_VOLUME;
+				} else {
+					sndSetLoudness(LOUDNESS_ON);
+					dispMode = MODE_LOUDNESS;
+				}
+			} else {
+				sndSetInput(cmd - CMD_RC5_RED);
+				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC5_RED);
+			}
+			setDisplayTime(TIMEOUT_AUDIO);
+			break;
+		case CMD_BTN_2_LONG:
+			if (sndGetLoudness()) {
+				sndSetLoudness(LOUDNESS_OFF);
+				dispMode = MODE_SND_VOLUME;
+			} else {
+				sndSetLoudness(LOUDNESS_ON);
+				dispMode = MODE_LOUDNESS;
+				setDisplayTime(TIMEOUT_AUDIO);
+			}
+			break;
+		case CMD_RC5_NEXT:
+		case CMD_BTN_3_LONG:
+			input = sndGetInput();
+			if (dispMode >= MODE_SND_GAIN0 && dispMode <= MODE_SND_GAIN3)
+				input++;
+			if (input >= sndInputCnt())
+				input = 0;
+			sndSetInput(input);
+			dispMode = MODE_SND_GAIN0 + input;
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		}
@@ -125,8 +162,11 @@ int main(void)
 		case MODE_MUTE:
 			showMute();
 			break;
+		case MODE_LOUDNESS:
+			showLoudness();
+			break;
 		default:
-			showSndParam(dispMode);
+			showSndParam(dispMode, ICON_NATIVE);
 			break;
 		}
 	}
