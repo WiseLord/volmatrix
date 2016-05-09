@@ -1,4 +1,4 @@
-TARG = vol6ch
+TARG = volmatrix
 
 MCU = atmega8
 F_CPU = 8000000
