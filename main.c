@@ -8,24 +8,18 @@
 #define STBY_ON						1
 #define STBY_OFF					0
 
-static uint8_t mute = MUTE_ON;
-static uint8_t stby = STBY_ON;
 static uint8_t dispMode = MODE_STANDBY;
 
 static void powerOn(void)
 {
-	stby = STBY_OFF;
-	mute = MUTE_OFF;
-	sndSetMute(mute);
+	sndPowerOn();
 	dispMode = MODE_SND_VOLUME;
 	setDisplayTime(TIMEOUT_AUDIO);
 }
 
 static void powerOff(void)
 {
-	stby = STBY_ON;
-	mute = MUTE_ON;
-	sndSetMute(mute);
+	sndSetMute(MUTE_ON);
 	sndPowerOff();
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
@@ -70,15 +64,14 @@ int main(void)
 			break;
 		case CMD_RC5_MUTE:
 		case CMD_BTN_2:
-			if (mute == MUTE_OFF) {
-				mute = MUTE_ON;
+			if (sndGetMute() == MUTE_OFF) {
+				sndSetMute(MUTE_ON);
 				dispMode = MODE_MUTE;
 			} else {
-				mute = MUTE_OFF;
+				sndSetMute(MUTE_OFF);
 				dispMode = MODE_SND_VOLUME;
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
-			sndSetMute(mute);
 			break;
 		case CMD_RC5_MENU:
 		case CMD_BTN_3:
@@ -149,7 +142,7 @@ int main(void)
 
 		/* Exid to default mode if timer expired */
 		if (getDisplayTime() == 0 && dispMode != MODE_STANDBY) {
-			if (mute == MUTE_ON)
+			if (sndGetMute() == MUTE_ON)
 				dispMode = MODE_MUTE;
 			else
 				dispMode = MODE_SND_VOLUME;
