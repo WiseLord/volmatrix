@@ -23,7 +23,7 @@ static const sndGrid grid[] PROGMEM = {
 };
 
 static sndParam sndPar[MODE_SND_END];
-static audioProc _aproc;
+static audioProc _aproc = AUDIOPROC_TDA7448MIX;
 
 static uint8_t _inCnt;
 static uint8_t _input;
@@ -45,9 +45,9 @@ void sndInit(void)
 	}
 	_input = eeprom_read_byte((uint8_t*)EEPROM_INPUT);
 	_loudness = eeprom_read_byte((uint8_t*)EEPROM_LOUDNESS);
-	_aproc = eeprom_read_byte((uint8_t*)EEPROM_AUDIOPROC);
-	if (_aproc >= AUDIOPROC_END)
-		_aproc = AUDIOPROC_TDA7439;
+//	_aproc = eeprom_read_byte((uint8_t*)EEPROM_AUDIOPROC);
+//	if (_aproc >= AUDIOPROC_END)
+//		_aproc = AUDIOPROC_TDA7448MIX;
 
 	switch (_aproc) {
 	case AUDIOPROC_TDA7439:
