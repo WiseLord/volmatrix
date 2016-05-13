@@ -35,6 +35,7 @@ int main(void)
 	_delay_ms(100);
 	powerOff();
 	sndInit();
+	powerOn();
 
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_END;
