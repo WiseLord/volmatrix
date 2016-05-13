@@ -398,7 +398,6 @@ void sndPowerOff(void)
 
 	eeprom_update_byte((uint8_t*)EEPROM_INPUT, _input);
 	eeprom_update_byte((uint8_t*)EEPROM_LOUDNESS, _loudness);
-	eeprom_update_byte((uint8_t*)EEPROM_AUDIOPROC, _aproc);
 
 	return;
 }
