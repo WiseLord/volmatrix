@@ -18,6 +18,8 @@ static const sndGrid grid[] PROGMEM = {
 	{  0,  3, 6.25 * 8},	/* 9: 0..18.75dB with 6.25dB step */
 	{-21,  0, 1.00 * 8},	/*10: -21..0dB with 1dB step */
 	{-96, 31, 1.00 * 8},	/*11: -96..31dB with 1dB step */
+	{ -8,  8, 1.00 * 8},	/*12: -8..8dB with 1dB step */
+	{-16,  0, 1.00 * 8},	/*13: -16..0dB with 1dB step */
 };
 
 static sndParam sndPar[MODE_SND_END];
@@ -60,6 +62,7 @@ void sndInit(void)
 		tda731xInit(sndPar);
 		break;
 	case AUDIOPROC_TDA7448:
+	case AUDIOPROC_TDA7448MIX:
 		tda7448Init(sndPar);
 		break;
 		break;
@@ -221,6 +224,19 @@ void sndInit(void)
 		sndPar[MODE_SND_CENTER].set = tda7448SetSpeakers;
 		sndPar[MODE_SND_SUBWOOFER].set = tda7448SetSpeakers;
 		break;
+	case AUDIOPROC_TDA7448MIX:
+		sndPar[MODE_SND_VOLUME].grid = &grid[1];
+		sndPar[MODE_SND_BALANCE].grid = &grid[12];
+		sndPar[MODE_SND_GAIN0].grid = &grid[13];
+		sndPar[MODE_SND_GAIN1].grid = &grid[13];
+		sndPar[MODE_SND_GAIN2].grid = &grid[13];
+		_inCnt = TDA7448MIX_IN_CNT;
+		sndPar[MODE_SND_VOLUME].set = tda7448MixSetSpeakers;
+		sndPar[MODE_SND_BALANCE].set = tda7448MixSetSpeakers;
+		sndPar[MODE_SND_GAIN0].set = tda7448MixSetSpeakers;
+		sndPar[MODE_SND_GAIN1].set = tda7448MixSetSpeakers;
+		sndPar[MODE_SND_GAIN2].set = tda7448MixSetSpeakers;
+		break;
 	default:
 		break;
 	}
@@ -255,6 +271,9 @@ void sndSetInput(uint8_t input)
 	case AUDIOPROC_TDA7318:
 	case AUDIOPROC_PT2314:
 		tda731xSetInput(_input);
+		break;
+	case AUDIOPROC_TDA7448MIX:
+		tda7448MixSetInput(_input);
 		break;
 	default:
 		break;
@@ -296,6 +315,10 @@ void sndSetMute(uint8_t value)
 		break;
 	case AUDIOPROC_TDA7448:
 		tda7448SetMute(_mute);
+		break;
+	case AUDIOPROC_TDA7448MIX:
+		tda7448MixSetMute(_mute);
+		break;
 	default:
 		break;
 	}

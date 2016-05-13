@@ -25,10 +25,15 @@ enum {
 #define TDA7448_MUTE				0xC0
 /* Number of inputs */
 #define TDA7448_IN_CNT				1
+#define TDA7448MIX_IN_CNT			3
 
 void tda7448Init(sndParam *sp);
 void tda7448SetSpeakers(int8_t val);
 
 void tda7448SetMute(uint8_t val);
+
+void tda7448MixSetSpeakers(int8_t val);
+void tda7448MixSetMute(int8_t val);
+void tda7448MixSetInput(uint8_t in);
 
 #endif /* TDA7448_H */
