@@ -17,6 +17,8 @@ static uint8_t newBuf[ROWS];						/* NExt screen buffer */
 
 static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
+static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
+
 static volatile uint16_t displayTime;
 
 static uint8_t rcType;
@@ -68,26 +70,6 @@ const static uint8_t subwooferIcon[] PROGMEM = {
 const static uint8_t muteIcon[] PROGMEM = {
 	0x11, 0x0A, 0x04, 0x0A, 0x11
 };
-
-static const avrPort ports[ROWS] PROGMEM = {
-	{&PORT(ROW_01), ROW_01_LINE},
-	{&PORT(ROW_02), ROW_02_LINE},
-	{&PORT(ROW_03), ROW_03_LINE},
-	{&PORT(ROW_04), ROW_04_LINE},
-	{&PORT(ROW_05), ROW_05_LINE},
-	{&PORT(ROW_06), ROW_06_LINE},
-	{&PORT(ROW_07), ROW_07_LINE},
-	{&PORT(ROW_08), ROW_08_LINE},
-	{&PORT(ROW_09), ROW_09_LINE},
-	{&PORT(ROW_10), ROW_10_LINE},
-	{&PORT(ROW_11), ROW_11_LINE},
-	{&PORT(ROW_12), ROW_12_LINE},
-	{&PORT(ROW_13), ROW_13_LINE},
-	{&PORT(ROW_14), ROW_14_LINE},
-	{&PORT(ROW_15), ROW_15_LINE},
-	{&PORT(ROW_16), ROW_16_LINE},
-};
-
 
 static void matrixShowDig(uint8_t dig)				/* Show decimal digit */
 {
@@ -196,22 +178,7 @@ static void rcCodesInit(void)
 	return;
 }
 
-ISR (TIMER0_OVF_vect)
-{
-	// 8000000/256/8 = 3906 polls/sec
-
-	uint8_t i;
-	static uint16_t rcTimer;
-
-	static volatile uint8_t stateBtnEnc;			/* Buttons and encoder raw state */
-
-	uint8_t btnNow;
-	static uint8_t btnPrev = BTN_STATE_0;
-	static int16_t btnCnt = 0;						/* Buttons press duration value */
-
-	uint8_t encNow;
-	static uint8_t encPrev = ENC_0;
-
+ISR (TIMER2_COMP_vect) {
 	static uint8_t row;								/* Current row being scanned */
 
 	row <<= 1;
@@ -223,23 +190,59 @@ ISR (TIMER0_OVF_vect)
 	else
 		PORT(REG_DATA) &= ~REG_DATA_LINE;
 
-	for (i = 0; i < ROWS; i++)
-		*((uint8_t*)pgm_read_word(&ports[i].port)) &= ~pgm_read_byte(&ports[i].line);
+	PORT(ROW_08_06_04_02) &= ~ROW_08_06_04_02_LINE;
+	PORT(ROW_16_15_13_12) &= ~ROW_16_15_13_12_LINE;
+	PORT(ROW_14_11_10_09_07_05_03_01) &= ~ROW_14_11_10_09_07_05_03_01_LINE;
 
 	// Strob 250ns on F_CPU 8MHz
 	PORT(REG_CLK) |= REG_CLK_LINE;
 	PORT(REG_CLK) &= ~REG_CLK_LINE;
 
-	for (i = 0; i < ROWS; i++) {
-		if (scrBuf[i] & row)
-			*((uint8_t*)pgm_read_word(&ports[i].port)) |= pgm_read_byte(&ports[i].line);
-	}
+	uint8_t portD, portC, portB;
+	portD = portC = portB = 0;
+
+	if (scrBuf[0] & row) portB |= ROW_01_LINE;
+	if (scrBuf[1] & row) portD |= ROW_02_LINE;
+	if (scrBuf[2] & row) portB |= ROW_03_LINE;
+	if (scrBuf[3] & row) portD |= ROW_04_LINE;
+	if (scrBuf[4] & row) portB |= ROW_05_LINE;
+	if (scrBuf[5] & row) portD |= ROW_06_LINE;
+	if (scrBuf[6] & row) portB |= ROW_07_LINE;
+	if (scrBuf[7] & row) portD |= ROW_08_LINE;
+	if (scrBuf[8] & row) portB |= ROW_09_LINE;
+	if (scrBuf[9] & row) portB |= ROW_10_LINE;
+	if (scrBuf[10] & row) portB |= ROW_11_LINE;
+	if (scrBuf[11] & row) portC |= ROW_12_LINE;
+	if (scrBuf[12] & row) portC |= ROW_13_LINE;
+	if (scrBuf[13] & row) portB |= ROW_14_LINE;
+	if (scrBuf[14] & row) portC |= ROW_15_LINE;
+	if (scrBuf[15] & row) portC |= ROW_16_LINE;
+
+	PORT(ROW_08_06_04_02) |= portD;
+	PORT(ROW_16_15_13_12) |= portC;
+	PORT(ROW_14_11_10_09_07_05_03_01) |= portB;
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)
 		stateBtnEnc &= ~row;
 	else
 		stateBtnEnc |= row;
+
+	return;
+}
+
+ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
+{
+	// 8000000/256/8 = 3906 polls/sec
+
+	static uint16_t rcTimer;
+
+	uint8_t btnNow;
+	static uint8_t btnPrev = BTN_STATE_0;
+	static int16_t btnCnt = 0;						/* Buttons press duration value */
+
+	uint8_t encNow;
+	static uint8_t encPrev = ENC_0;
 
 	btnNow = stateBtnEnc & BTN_ALL;
 	encNow = stateBtnEnc & ENC_AB;
@@ -389,7 +392,12 @@ void matrixInit(void)
 	DDR(REG_CLK) |= REG_CLK_LINE;
 
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
-	TCCR0 |= (0<<CS02) | (1<<CS01) | (0 <<CS00);	/* Set timer prescaller to 8 */
+	TCCR0 |= (0<<CS02) | (1<<CS01) | (0 <<CS00);	/* Set timer prescaller to 1 */
+
+	TIMSK |= (1<<OCIE2);							/* Enable timer overflow interrupt */
+	TCCR2 |= (0<<CS22) | (1<<CS21) | (0 <<CS20);	/* Set timer prescaller to 8 */
+	TCCR2 |= (1 << WGM21);							/* Clear timer on compare match */
+	OCR2 = 31;
 
 	cmdBuf = CMD_END;
 	encCnt = 0;
@@ -539,10 +547,10 @@ void updateScreen(uint8_t effect)
 		for (i = 0; i < ROWS / 2; i++) {
 			scrBuf[i] = 0x00;
 			scrBuf[ROWS - 1 - i] = 0x00;
-			_delay_ms(10);
+			_delay_ms(5);
 		}
 		for (i = ROWS / 2; i < ROWS; i++) {
-			_delay_ms(10);
+			_delay_ms(5);
 			scrBuf[i] = newBuf[i];
 			scrBuf[ROWS - 1 - i] = newBuf[ROWS - 1 - i];
 		}

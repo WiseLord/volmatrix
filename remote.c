@@ -20,7 +20,7 @@ void rcInit(void)
 	return;
 }
 
-ISR(TIMER1_OVF_vect)								// Overflow every 33ms
+ISR(TIMER1_OVF_vect, ISR_NOBLOCK)					// Overflow every 33ms
 {
 	if (ovfCnt <= 250)
 		ovfCnt++;
@@ -28,7 +28,7 @@ ISR(TIMER1_OVF_vect)								// Overflow every 33ms
 	return;
 }
 
-ISR(INT1_vect)
+ISR(INT1_vect, ISR_NOBLOCK)
 {
 	// RC pin state on interrupt event is inverted due to inverted IR receiver polarity
 	uint8_t rcPin = !(PIN(RC) & RC_LINE);
