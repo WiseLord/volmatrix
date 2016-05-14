@@ -4,10 +4,10 @@
 #include <inttypes.h>
 #include "pins.h"
 
-#define RC5_SHORT_MIN				711		// 889 us ± 20%
-#define RC5_SHORT_MAX				1067
-#define RC5_LONG_MIN				1422	// 1778 us  ± 20%
-#define RC5_LONG_MAX				2133
+#define RC5_SHORT_MIN				622		// 889 us ± 30%
+#define RC5_SHORT_MAX				1156
+#define RC5_LONG_MIN				1245	// 1778 us  ± 30%
+#define RC5_LONG_MAX				2773
 
 #define RC5_STBT_MASK				0x3000
 #define RC5_TOGB_MASK				0x0800
@@ -28,18 +28,18 @@ typedef enum {
 	STATE_RC5_START0 = 3,
 } RC5State;
 
-#define NEC_PULSE_WIDTH_MIN			448		//  560 us ± 20%
-#define NEC_PULSE_WIDTH_MAX			672
-#define NEC_ZERO_WIDTH_MIN			448		//  560 us ± 20%
-#define NEC_ZERO_WIDTH_MAX			672
-#define NEC_ONE_WIDTH_MIN			1344	// 1680 us ± 20%
-#define NEC_ONE_WIDTH_MAX			2016
-#define NEC_START_PULSE_WIDTH_MIN	7200	// 9000 us ± 20%
-#define NEC_START_PULSE_WIDTH_MAX	10800
-#define NEC_START_PAUSE_WIDTH_MIN	3600	// 4500 us ± 20%
-#define NEC_START_PAUSE_WIDTH_MAX	5400
-#define NEC_REPEAT_WIDTH_MIN		1800	// 2250 us ± 20%
-#define NEC_REPEAT_WIDTH_MAX		2700
+#define NEC_PULSE_WIDTH_MIN			392		//  560 us ± 30%
+#define NEC_PULSE_WIDTH_MAX			728
+#define NEC_ZERO_WIDTH_MIN			392		//  560 us ± 30%
+#define NEC_ZERO_WIDTH_MAX			728
+#define NEC_ONE_WIDTH_MIN			1176	// 1680 us ± 30%
+#define NEC_ONE_WIDTH_MAX			2184
+#define NEC_START_PULSE_WIDTH_MIN	6300	// 9000 us ± 30%
+#define NEC_START_PULSE_WIDTH_MAX	11700
+#define NEC_START_PAUSE_WIDTH_MIN	3150	// 4500 us ± 30%
+#define NEC_START_PAUSE_WIDTH_MAX	5850
+#define NEC_REPEAT_WIDTH_MIN		1575	// 2250 us ± 30%
+#define NEC_REPEAT_WIDTH_MAX		2925
 
 enum {
 	IR_TYPE_RC5,
