@@ -11,7 +11,6 @@
 #include "icons.h"
 
 static uint8_t pos;									/* Current position in framebuffer */
-static volatile uint8_t row;						/* Current row being scanned */
 
 static uint8_t screen[ROWS];						/* Screen buffer */
 
@@ -183,10 +182,13 @@ ISR (TIMER0_OVF_vect)
 	uint8_t encNow;
 	static uint8_t encPrev = ENC_0;
 
-	if (++row >= 8)
-		row = 0;
+	static uint8_t row;								/* Current row being scanned */
 
-	if (row == 7)
+	row <<= 1;
+	if (!row)
+		row = 0x01;
+
+	if (row & 0x80)
 		PORT(REG_DATA) |= REG_DATA_LINE;
 	else
 		PORT(REG_DATA) &= ~REG_DATA_LINE;
@@ -194,22 +196,19 @@ ISR (TIMER0_OVF_vect)
 	for (i = 0; i < ROWS; i++)
 		*((uint8_t*)pgm_read_word(&ports[i].port)) &= ~pgm_read_byte(&ports[i].line);
 
-	asm("nop");
+	// Strob 250ns on F_CPU 8MHz
 	PORT(REG_CLK) |= REG_CLK_LINE;
-	asm("nop");
-	asm("nop");
 	PORT(REG_CLK) &= ~REG_CLK_LINE;
-	asm("nop");
 
 	for (i = 0; i < ROWS; i++)
-		if (screen[i] & (1<<row))
+		if (screen[i] & row)
 			*((uint8_t*)pgm_read_word(&ports[i].port)) |= pgm_read_byte(&ports[i].line);
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)
-		stateBtnEnc &= ~(1<<row);
+		stateBtnEnc &= ~row;
 	else
-		stateBtnEnc |= (1<<row);
+		stateBtnEnc |= row;
 
 	btnNow = stateBtnEnc & BTN_ALL;
 	encNow = stateBtnEnc & ENC_AB;
