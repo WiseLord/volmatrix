@@ -280,38 +280,26 @@ ISR (TIMER0_OVF_vect)
 		btnCnt = 0;
 	}
 
-	/* Place RC event to command buffer if enough RC timer ticks */
-	uint16_t rcBuf = getRCRawBuf();
+	/* Place RC5 event to command buffer if enough RC5 timer ticks */
+	IRData ir = takeIrData();
 
-	static uint8_t togBitNow = 0;
-	static uint8_t togBitPrev = 0;
+	CmdID rcCmdBuf = CMD_END;
 
-	uint8_t rcCmdBuf = CMD_END;
-	uint8_t rcCmd;
-
-	if ((rcBuf != RC5_BUF_EMPTY) && ((rcBuf & RC5_ADDR_MASK) >> 6 == rcAddr)) {
-		if (rcBuf & RC5_TOGB_MASK)
-			togBitNow = 1;
-		else
-			togBitNow = 0;
-
-		rcCmd = rcBuf & RC5_COMM_MASK;
-		if ((togBitNow != togBitPrev) || (rcTimer > RC_LONG_PRESS)) {
+	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
+		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
 			rcTimer = 0;
-			rcCmdBuf = rcCmdIndex(rcCmd);
+			rcCmdBuf = rcCmdIndex(ir.command);
 		}
-		if (rcCmd == rcCode[CMD_RC_VOL_UP] || rcCmd == rcCode[CMD_RC_VOL_DOWN]) {
+		if (ir.command == rcCode[CMD_RC_VOL_UP] || ir.command == rcCode[CMD_RC_VOL_DOWN]) {
 			if (rcTimer > RC_VOL_REPEAT) {
 				rcTimer = RC_VOL_DELAY;
-				rcCmdBuf = rcCmdIndex(rcCmd);
+				rcCmdBuf = rcCmdIndex(ir.command);
 			}
 		}
-		togBitPrev = togBitNow;
 	}
 
-	if (cmdBuf == CMD_END) {
+	if (cmdBuf == CMD_END)
 		cmdBuf = rcCmdBuf;
-	}
 
 	/* Timer of current display mode */
 	if (displayTime)
