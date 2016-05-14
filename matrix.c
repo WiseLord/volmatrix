@@ -61,7 +61,7 @@ const static uint8_t muteIcon[] PROGMEM = {
 	0x11, 0x0A, 0x04, 0x0A, 0x11
 };
 
-static avrPort ports[ROWS] = {
+static const avrPort ports[ROWS] PROGMEM = {
 	{&PORT(ROW_01), ROW_01_LINE},
 	{&PORT(ROW_02), ROW_02_LINE},
 	{&PORT(ROW_03), ROW_03_LINE},
@@ -79,6 +79,7 @@ static avrPort ports[ROWS] = {
 	{&PORT(ROW_15), ROW_15_LINE},
 	{&PORT(ROW_16), ROW_16_LINE},
 };
+
 
 static void matrixShowDig(uint8_t dig)				/* Show decimal digit */
 {
@@ -190,7 +191,7 @@ ISR (TIMER0_OVF_vect)
 		PORT(REG_DATA) &= ~REG_DATA_LINE;
 
 	for (i = 0; i < ROWS; i++)
-		*ports[i].port &= ~ports[i].mask;
+		*((uint8_t*)pgm_read_word(&ports[i].port)) &= ~pgm_read_byte(&ports[i].line);
 
 	asm("nop");
 	PORT(REG_CLK) |= REG_CLK_LINE;
@@ -201,7 +202,7 @@ ISR (TIMER0_OVF_vect)
 
 	for (i = 0; i < ROWS; i++)
 		if (screen[i] & (1<<row))
-			*ports[i].port |= ports[i].mask;
+			*((uint8_t*)pgm_read_word(&ports[i].port)) |= pgm_read_byte(&ports[i].line);
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)

@@ -11,7 +11,7 @@
 
 typedef struct {
 	volatile uint8_t *port;
-	uint8_t mask;
+	uint8_t line;
 } avrPort;
 
 /* Matrix ports */
