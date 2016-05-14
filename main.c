@@ -23,7 +23,6 @@ static void powerOff(void)
 	sndPowerOff();
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
-	matrixFadeOff();
 }
 
 int main(void)
@@ -33,7 +32,6 @@ int main(void)
 	matrixInit();
 	sei();
 
-	matrixFill(0xFF);
 	_delay_ms(100);
 	powerOff();
 	sndInit();
@@ -41,6 +39,7 @@ int main(void)
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_END;
 	uint8_t input;
+	static uint8_t dispPrev = MODE_STANDBY;
 
 	while(1) {
 		encCnt = getEncoder();
@@ -151,6 +150,7 @@ int main(void)
 		/* Show things */
 		switch (dispMode) {
 		case MODE_STANDBY:
+			showStby();
 			break;
 		case MODE_MUTE:
 			showMute();
@@ -162,6 +162,13 @@ int main(void)
 			showSndParam(dispMode, ICON_NATIVE);
 			break;
 		}
+
+		if (dispMode == dispPrev)
+			updateScreen(EFFECT_NONE);
+		else
+			updateScreen(EFFECT_SPLASH);
+
+		dispPrev = dispMode;
 	}
 
 	return 0;

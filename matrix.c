@@ -12,7 +12,8 @@
 
 static uint8_t pos;									/* Current position in framebuffer */
 
-static uint8_t screen[ROWS];						/* Screen buffer */
+static uint8_t scrBuf[ROWS];						/* Screen buffer */
+static uint8_t newBuf[ROWS];						/* NExt screen buffer */
 
 static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
@@ -87,13 +88,13 @@ static void matrixShowDig(uint8_t dig)				/* Show decimal digit */
 
 	for (i = 0; i < 3; i++) {
 		if (pos < ROWS) {
-			screen[pos] &= 0xE0;
-			screen[pos] |= pgm_read_byte(font_dig_3x5 + dig * 3 + i);
+			newBuf[pos] &= 0xE0;
+			newBuf[pos] |= pgm_read_byte(font_dig_3x5 + dig * 3 + i);
 			pos++;
 		}
 	}
 	if (pos < ROWS)
-		screen[pos++] &= 0xE0;
+		newBuf[pos++] &= 0xE0;
 
 	return;
 }
@@ -132,9 +133,9 @@ static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 
 	for (i = 0; i < 16; i++) {
 		if (value > i)
-			screen[i] |= 0xC0;
+			newBuf[i] |= 0xC0;
 		else
-			screen[i] &= ~0xC0;
+			newBuf[i] &= ~0xC0;
 	}
 
 	return;
@@ -146,9 +147,9 @@ static void matrixShowSymBar(int8_t value)
 
 	for (i = 0; i < 16; i++) {
 		if ((value && ((i < 8 && value < i - 7) || (i >= 8 && value > i - 8))) || (!value && (i == 7 || i == 8)))
-			screen[i] |= 0xC0;
+			newBuf[i] |= 0xC0;
 		else
-			screen[i] &= ~0xC0;
+			newBuf[i] &= ~0xC0;
 	}
 
 
@@ -200,9 +201,10 @@ ISR (TIMER0_OVF_vect)
 	PORT(REG_CLK) |= REG_CLK_LINE;
 	PORT(REG_CLK) &= ~REG_CLK_LINE;
 
-	for (i = 0; i < ROWS; i++)
-		if (screen[i] & row)
+	for (i = 0; i < ROWS; i++) {
+		if (scrBuf[i] & row)
 			*((uint8_t*)pgm_read_word(&ports[i].port)) |= pgm_read_byte(&ports[i].line);
+	}
 
 	/* Update buttons state */
 	if (PIN(BUTTON) & BUTTON_LINE)
@@ -221,7 +223,7 @@ ISR (TIMER0_OVF_vect)
 		if (encPrev == ENC_A)
 			encCnt--;
 		break;
-/*	case ENC_A:
+		/*	case ENC_A:
 		if (encPrev == ENC_AB)
 			encCnt++;
 		if (encPrev == ENC_0)
@@ -324,8 +326,8 @@ static void showIcon(const uint8_t iconNum)
 		for (i = 0; i < 5; i++) {
 			pgmData = pgm_read_byte(icon + i);
 			pgmData &= 0x01F;
-			screen[i] &= 0xE0;
-			screen[i] |= pgmData;
+			newBuf[i] &= 0xE0;
+			newBuf[i] |= pgmData;
 		}
 	}
 
@@ -372,20 +374,7 @@ void matrixFill(uint8_t data)
 	uint8_t i;
 
 	for (i = 0; i < ROWS; i++)
-		screen[i] = data;
-
-	return;
-}
-
-void matrixFadeOff(void)
-{
-	uint8_t i;
-
-	for (i = 0; i < 8; i++) {
-		_delay_ms(10);
-		screen[i] = 0;
-		screen[15 - i] = 0;
-	}
+		newBuf[i] = data;
 
 	return;
 }
@@ -431,6 +420,40 @@ void showLoudness(void)
 
 	return;
 }
+
+void showStby(void)
+{
+	matrixFill(0x00);
+
+	return;
+}
+
+void updateScreen(uint8_t effect)
+{
+	uint8_t i;
+
+	switch (effect) {
+	case EFFECT_NONE:
+		for (i = 0; i < ROWS; i++)
+			scrBuf[i] = newBuf[i];
+		break;
+	case EFFECT_SPLASH:
+		for (i = 0; i < ROWS / 2; i++) {
+			scrBuf[i] = 0x00;
+			scrBuf[ROWS - 1 - i] = 0x00;
+			_delay_ms(10);
+		}
+		for (i = ROWS / 2; i < ROWS; i++) {
+			_delay_ms(10);
+			scrBuf[i] = newBuf[i];
+			scrBuf[ROWS - 1 - i] = newBuf[ROWS - 1 - i];
+		}
+		break;
+	}
+
+	return;
+}
+
 
 int8_t getEncoder(void)
 {

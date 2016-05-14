@@ -57,6 +57,13 @@ enum {
 	ICON_OTHER
 };
 
+enum {
+	EFFECT_NONE,
+	EFFECT_SPLASH,
+
+	EFFECT_END
+};
+
 #define TIMEOUT_AUDIO		2000
 #define TIMEOUT_STBY		1000
 
@@ -74,11 +81,13 @@ enum {
 
 void matrixInit(void);
 void matrixFill(uint8_t data);
-void matrixFadeOff(void);
 
 void showSndParam(sndMode mode, uint8_t icon);
 void showMute(void);
 void showLoudness(void);
+void showStby(void);
+
+void updateScreen(uint8_t effect);
 
 int8_t getEncoder(void);
 CmdID getCmdBuf(void);
