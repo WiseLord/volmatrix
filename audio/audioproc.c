@@ -389,7 +389,7 @@ void sndPowerOn(void)
 	return;
 }
 
-void sndPowerOff(void)
+void sndSave(void)
 {
 	uint8_t i;
 

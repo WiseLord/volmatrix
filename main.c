@@ -20,7 +20,7 @@ static void powerOn(void)
 static void powerOff(void)
 {
 	sndSetMute(MUTE_ON);
-	sndPowerOff();
+	sndSave();
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
 }
@@ -62,6 +62,12 @@ int main(void)
 
 		/* Handle command */
 		switch (cmd) {
+		case CMD_RC_SAVE:
+			if (dispMode != MODE_STANDBY) {
+				dispPrev = MODE_STANDBY;
+				sndSave();
+			}
+			break;
 		case CMD_RC_STBY:
 		case CMD_BTN_1:
 			if (dispMode == MODE_STANDBY)
@@ -89,37 +95,9 @@ int main(void)
 				setDisplayTime(TIMEOUT_AUDIO);
 			}
 			break;
-		case CMD_RC_RED:
-		case CMD_RC_GREEN:
-		case CMD_RC_YELLOW:
-		case CMD_RC_BLUE:
-			if (cmd == CMD_RC_BLUE && sndInputCnt() < 4) {
-				if (sndGetLoudness()) {
-					sndSetLoudness(LOUDNESS_OFF);
-					dispMode = MODE_SND_VOLUME;
-				} else {
-					sndSetLoudness(LOUDNESS_ON);
-					dispMode = MODE_LOUDNESS;
-				}
-			} else {
-				sndSetInput(cmd - CMD_RC_RED);
-				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
-			}
-			setDisplayTime(TIMEOUT_AUDIO);
-			break;
 		case CMD_BTN_1_LONG:
 			if (dispMode == MODE_LEARN)
 				powerOff();
-			break;
-		case CMD_BTN_2_LONG:
-			if (sndGetLoudness()) {
-				sndSetLoudness(LOUDNESS_OFF);
-				dispMode = MODE_SND_VOLUME;
-			} else {
-				sndSetLoudness(LOUDNESS_ON);
-				dispMode = MODE_LOUDNESS;
-				setDisplayTime(TIMEOUT_AUDIO);
-			}
 			break;
 		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:

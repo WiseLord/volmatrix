@@ -38,6 +38,6 @@ void sndNextParam(uint8_t *mode);
 void sndChangeParam(uint8_t mode, int8_t diff);
 
 void sndPowerOn(void);
-void sndPowerOff(void);
+void sndSave(void);
 
 #endif /* AUDIOPROC */
