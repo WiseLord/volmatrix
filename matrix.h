@@ -64,6 +64,13 @@ enum {
 	EFFECT_END
 };
 
+enum {
+	SYM_SPACE,
+	SYM_MINUS,
+
+	SYM_NUMBERS
+};
+
 #define TIMEOUT_AUDIO		2000
 #define TIMEOUT_STBY		1000
 

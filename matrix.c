@@ -23,7 +23,10 @@ static uint8_t rcType;
 static uint8_t rcAddr;
 static uint8_t rcCode[CMD_RC_END];					/* Array with RC commands */
 
-const static uint8_t font_dig_3x5[] PROGMEM = {
+
+static const uint8_t font_dig_3x5[] PROGMEM = {
+	0x00, 0x00, 0x00, // space
+	0x00, 0x04, 0x04, // minus
 	0x1F, 0x11, 0x1F, // 0
 	0x12, 0x1F, 0x10, // 1
 	0x1D, 0x15, 0x17, // 2
@@ -34,8 +37,6 @@ const static uint8_t font_dig_3x5[] PROGMEM = {
 	0x01, 0x01, 0x1F, // 7
 	0x1F, 0x15, 0x1F, // 8
 	0x17, 0x15, 0x1F, // 9
-	0x00, 0x04, 0x04, // minus
-	0x00, 0x00, 0x00, // space
 };
 
 const static uint8_t volumeIcon[] PROGMEM = {
@@ -99,30 +100,29 @@ static void matrixShowDig(uint8_t dig)				/* Show decimal digit */
 	return;
 }
 
+static void matrixSetPos(int8_t value)
+{
+	pos = value;
 
-static void matrixShowNumber(int8_t value)			/* Show 3-digits decimal number */
+	return;
+}
+
+static void matrixShowDecimal(int8_t value)			/* Show decimal number */
 {
 	uint8_t neg = 0;
-	pos = 5;
 
 	if (value < 0) {
 		neg = 1;
 		value = -value;
 	}
 	if (value / 10) {
-		if (neg)
-			matrixShowDig(10); // minus
-		else
-			matrixShowDig(11); // space
-		matrixShowDig(value / 10);
+		matrixShowDig(neg);
+		matrixShowDig(SYM_NUMBERS + value / 10);
 	} else {
-		matrixShowDig(11); // space
-		if (neg)
-			matrixShowDig(10); // minus
-		else
-			matrixShowDig(11); // space
+		matrixShowDig(SYM_SPACE);
+		matrixShowDig(neg);
 	}
-	matrixShowDig(value % 10);
+	matrixShowDig(SYM_NUMBERS + value % 10);
 
 	return;
 }
@@ -394,7 +394,9 @@ void showSndParam(sndMode mode, uint8_t icon)
 
 	if (icon == ICON_NATIVE)
 		showIcon(param->icon);
-	matrixShowNumber(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
+
+	matrixSetPos(5);
+	matrixShowDecimal(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
 
 	if (min + max) {
 		max -= min;
