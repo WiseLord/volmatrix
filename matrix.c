@@ -169,7 +169,7 @@ static CmdID rcCmdIndex(uint8_t rcCmd)
 
 ISR (TIMER0_OVF_vect)
 {
-	TCNT0 = 255 - F_CPU/64/1000/POLL_FREQ;
+	// 8000000/256/8 = 3906 polls/sec
 
 	uint8_t i;
 	static uint16_t rcTimer;
@@ -356,7 +356,7 @@ void matrixInit(void)
 	DDR(REG_CLK) |= REG_CLK_LINE;
 
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
-	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);	/* Set timer prescaller to 64 */
+	TCCR0 |= (0<<CS02) | (1<<CS01) | (0 <<CS00);	/* Set timer prescaller to 8 */
 
 	cmdBuf = CMD_END;
 	encCnt = 0;

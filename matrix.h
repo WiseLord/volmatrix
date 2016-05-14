@@ -61,7 +61,7 @@ enum {
 #define TIMEOUT_STBY		1000
 
 /* Buttons poll frequency, kHz */
-#define POLL_FREQ			5
+#define POLL_FREQ			4
 
 /* Button press durations, time(ms) * POLL_FREQ */
 #define SHORT_PRESS			(100 * POLL_FREQ)
