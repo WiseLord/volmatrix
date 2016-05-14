@@ -37,6 +37,12 @@ static const uint8_t font_dig_3x5[] PROGMEM = {
 	0x01, 0x01, 0x1F, // 7
 	0x1F, 0x15, 0x1F, // 8
 	0x17, 0x15, 0x1F, // 9
+	0x1E, 0x05, 0x1F, // A
+	0x1F, 0x15, 0x1B, // B
+	0x0E, 0x11, 0x11, // C
+	0x1F, 0x11, 0x0E, // D
+	0x1F, 0x15, 0x11, // E
+	0x1F, 0x05, 0x01, // F
 };
 
 const static uint8_t volumeIcon[] PROGMEM = {
@@ -126,7 +132,15 @@ static void matrixShowDecimal(int8_t value)			/* Show decimal number */
 
 	return;
 }
+/*
+static void matrixShowHex(uint8_t value)
+{
+	matrixShowDig(SYM_NUMBERS + (value / 16));
+	matrixShowDig(SYM_NUMBERS + (value % 16));
 
+	return;
+}
+*/
 static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 {
 	uint8_t i;
