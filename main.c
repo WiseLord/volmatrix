@@ -45,10 +45,17 @@ int main(void)
 		encCnt = getEncoder();
 		cmd = getCmdBuf();
 
-		/* Don't handle commands in standby mode */
+		/* Don't handle commands in standby mode except some */
 		if (dispMode == MODE_STANDBY) {
 			encCnt = 0;
-			if (cmd != CMD_RC_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
+			if (cmd != CMD_RC_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_1_2_LONG)
+				cmd = CMD_END;
+		}
+		/* Don't handle buttons in learn mode except some */
+		if (dispMode == MODE_LEARN) {
+			if (encCnt || cmd != CMD_END)
+				setDisplayTime(TIMEOUT_LEARN);
+			if (cmd != CMD_BTN_1_LONG && cmd != CMD_BTN_3)
 				cmd = CMD_END;
 		}
 
@@ -74,8 +81,12 @@ int main(void)
 			break;
 		case CMD_RC_MENU:
 		case CMD_BTN_3:
-			sndNextParam(&dispMode);
-			setDisplayTime(TIMEOUT_AUDIO);
+			if (dispMode == MODE_LEARN) {
+				nextRcCmd();
+			} else {
+				sndNextParam(&dispMode);
+				setDisplayTime(TIMEOUT_AUDIO);
+			}
 			break;
 		case CMD_RC_RED:
 		case CMD_RC_GREEN:
@@ -94,6 +105,10 @@ int main(void)
 				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
+			break;
+		case CMD_BTN_1_LONG:
+			if (dispMode == MODE_LEARN)
+				powerOff();
 			break;
 		case CMD_BTN_2_LONG:
 			if (sndGetLoudness()) {
@@ -115,6 +130,12 @@ int main(void)
 			sndSetInput(input);
 			dispMode = MODE_SND_GAIN0 + input;
 			setDisplayTime(TIMEOUT_AUDIO);
+			break;
+		case CMD_BTN_1_2_LONG:
+			if (dispMode == MODE_STANDBY)
+				dispMode = MODE_LEARN;
+			switchTestMode(CMD_RC_STBY);
+			setDisplayTime(TIMEOUT_LEARN);
 			break;
 		}
 
@@ -140,11 +161,15 @@ int main(void)
 		}
 
 		/* Exid to default mode if timer expired */
-		if (getDisplayTime() == 0 && dispMode != MODE_STANDBY) {
-			if (sndGetMute() == MUTE_ON)
-				dispMode = MODE_MUTE;
-			else
-				dispMode = MODE_SND_VOLUME;
+		if (getDisplayTime() == 0) {
+			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
+				dispMode = MODE_STANDBY;
+			} else {
+				if (sndGetMute() == MUTE_ON)
+					dispMode = MODE_MUTE;
+				else
+					dispMode = MODE_SND_VOLUME;
+			}
 		}
 
 		/* Show things */
@@ -157,6 +182,9 @@ int main(void)
 			break;
 		case MODE_LOUDNESS:
 			showLoudness();
+			break;
+		case MODE_LEARN:
+			showLearn();
 			break;
 		default:
 			showSndParam(dispMode, ICON_NATIVE);

@@ -40,6 +40,8 @@ typedef enum {
 	CMD_BTN_2_LONG,
 	CMD_BTN_3_LONG,
 
+	CMD_BTN_1_2_LONG,
+
 	CMD_END
 } CmdID;
 
@@ -48,6 +50,8 @@ enum {
 
 	MODE_MUTE,
 	MODE_LOUDNESS,
+
+	MODE_LEARN,
 
 	MODE_END
 };
@@ -73,6 +77,7 @@ enum {
 
 #define TIMEOUT_AUDIO		2000
 #define TIMEOUT_STBY		1000
+#define TIMEOUT_LEARN		10000
 
 /* Buttons poll frequency, kHz */
 #define POLL_FREQ			4
@@ -93,6 +98,10 @@ void showSndParam(sndMode mode, uint8_t icon);
 void showMute(void);
 void showLoudness(void);
 void showStby(void);
+
+void showLearn(void);
+void nextRcCmd(void);
+void switchTestMode(uint8_t index);
 
 void updateScreen(uint8_t effect);
 

@@ -22,7 +22,7 @@ static volatile uint16_t displayTime;
 static uint8_t rcType;
 static uint8_t rcAddr;
 static uint8_t rcCode[CMD_RC_END];					/* Array with RC commands */
-
+static uint8_t rcIndex = 0;							/* Index of RC command being learned */
 
 static const uint8_t font_dig_3x5[] PROGMEM = {
 	0x00, 0x00, 0x00, // space
@@ -187,6 +187,15 @@ static CmdID rcCmdIndex(uint8_t rcCmd)
 	return CMD_RC_END;
 }
 
+static void rcCodesInit(void)
+{
+	rcType = eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE);
+	rcAddr = eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR);
+	eeprom_read_block(rcCode, (uint8_t*)EEPROM_RC_CMD, CMD_RC_END);
+
+	return;
+}
+
 ISR (TIMER0_OVF_vect)
 {
 	// 8000000/256/8 = 3906 polls/sec
@@ -278,6 +287,9 @@ ISR (TIMER0_OVF_vect)
 					break;
 				case BTN_3:
 					cmdBuf = CMD_BTN_3_LONG;
+					break;
+				case BTN_1 | BTN_2:
+					cmdBuf = CMD_BTN_1_2_LONG;
 					break;
 				}
 			}
@@ -382,9 +394,7 @@ void matrixInit(void)
 	cmdBuf = CMD_END;
 	encCnt = 0;
 
-	rcType = eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE);
-	rcAddr = eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR);
-	eeprom_read_block(rcCode, (uint8_t*)EEPROM_RC_CMD, CMD_RC_END);
+	rcCodesInit();
 
 	return;
 }
@@ -446,6 +456,72 @@ void showLoudness(void)
 void showStby(void)
 {
 	matrixFill(0x00);
+	rcIndex = 0;
+
+	return;
+}
+
+void showLearn(void)
+{
+	IRData irBuf = getIrData();
+
+	matrixFill(0x00);
+
+	matrixSetPos(5);
+	matrixShowDecimal(rcIndex);
+
+	// Binary data of RC addres
+	newBuf[0] = rcAddr;
+	newBuf[1] = irBuf.address;
+
+	// Binary data of RC command
+	newBuf[4] = rcCode[rcIndex];
+	newBuf[5] = irBuf.command;
+
+	// Binary data of RC type
+	if (rcType == IR_TYPE_RC5) {
+		newBuf[8] |= 0x80;
+		newBuf[8] &= ~0x40;
+	} else {
+		newBuf[8] |= 0x40;
+		newBuf[8] &= ~0x80;
+	}
+	if (irBuf.type == IR_TYPE_RC5) {
+		newBuf[9] |= 0x80;
+		newBuf[9] &= ~0x40;
+	} else {
+		newBuf[9] |= 0x40;
+		newBuf[9] &= ~0x80;
+	}
+
+	return;
+}
+
+void nextRcCmd(void)
+{
+	IRData irBuf = getIrData();
+
+	eeprom_update_byte((uint8_t*)EEPROM_RC_TYPE, irBuf.type);
+	eeprom_update_byte((uint8_t*)EEPROM_RC_ADDR, irBuf.address);
+	eeprom_update_byte((uint8_t*)EEPROM_RC_CMD + rcIndex, irBuf.command);
+
+	// Re-read new codes array from EEPROM
+	rcCodesInit();
+
+	if (++rcIndex >= CMD_RC_END)
+		rcIndex = CMD_RC_STBY;
+
+	switchTestMode(rcIndex);
+
+	return;
+}
+
+void switchTestMode(uint8_t index)
+{
+	rcIndex = index;
+	setIrData(eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE),
+			  eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR),
+			  eeprom_read_byte((uint8_t*)EEPROM_RC_CMD + rcIndex));
 
 	return;
 }
