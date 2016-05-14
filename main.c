@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 #include "audio/audioproc.h"
-#include "rc5.h"
+#include "remote.h"
 
 #define STBY_ON						1
 #define STBY_OFF					0
@@ -28,7 +28,7 @@ static void powerOff(void)
 
 int main(void)
 {
-	rc5Init();
+	rcInit();
 	sndInit();
 	matrixInit();
 	sei();
@@ -39,7 +39,7 @@ int main(void)
 	sndInit();
 
 	int8_t encCnt = 0;
-	uint8_t cmd = CMD_EMPTY;
+	uint8_t cmd = CMD_END;
 	uint8_t input;
 
 	while(1) {
@@ -49,20 +49,20 @@ int main(void)
 		/* Don't handle commands in standby mode */
 		if (dispMode == MODE_STANDBY) {
 			encCnt = 0;
-			if (cmd != CMD_RC5_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
-				cmd = CMD_EMPTY;
+			if (cmd != CMD_RC_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_3_LONG)
+				cmd = CMD_END;
 		}
 
 		/* Handle command */
 		switch (cmd) {
-		case CMD_RC5_STBY:
+		case CMD_RC_STBY:
 		case CMD_BTN_1:
 			if (dispMode == MODE_STANDBY)
 				powerOn();
 			else
 				powerOff();
 			break;
-		case CMD_RC5_MUTE:
+		case CMD_RC_MUTE:
 		case CMD_BTN_2:
 			if (sndGetMute() == MUTE_OFF) {
 				sndSetMute(MUTE_ON);
@@ -73,16 +73,16 @@ int main(void)
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
-		case CMD_RC5_MENU:
+		case CMD_RC_MENU:
 		case CMD_BTN_3:
 			sndNextParam(&dispMode);
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
-		case CMD_RC5_RED:
-		case CMD_RC5_GREEN:
-		case CMD_RC5_YELLOW:
-		case CMD_RC5_BLUE:
-			if (cmd == CMD_RC5_BLUE && sndInputCnt() < 4) {
+		case CMD_RC_RED:
+		case CMD_RC_GREEN:
+		case CMD_RC_YELLOW:
+		case CMD_RC_BLUE:
+			if (cmd == CMD_RC_BLUE && sndInputCnt() < 4) {
 				if (sndGetLoudness()) {
 					sndSetLoudness(LOUDNESS_OFF);
 					dispMode = MODE_SND_VOLUME;
@@ -91,8 +91,8 @@ int main(void)
 					dispMode = MODE_LOUDNESS;
 				}
 			} else {
-				sndSetInput(cmd - CMD_RC5_RED);
-				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC5_RED);
+				sndSetInput(cmd - CMD_RC_RED);
+				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
@@ -106,7 +106,7 @@ int main(void)
 				setDisplayTime(TIMEOUT_AUDIO);
 			}
 			break;
-		case CMD_RC5_NEXT:
+		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:
 			input = sndGetInput();
 			if (dispMode >= MODE_SND_GAIN0 && dispMode <= MODE_SND_GAIN3)
@@ -119,10 +119,10 @@ int main(void)
 			break;
 		}
 
-		/* Emulate RC5 VOL_UP/VOL_DOWN as encoder actions */
-		if (cmd == CMD_RC5_VOL_UP)
+		/* Emulate RC VOL_UP/VOL_DOWN as encoder actions */
+		if (cmd == CMD_RC_VOL_UP)
 			encCnt++;
-		if (cmd == CMD_RC5_VOL_DOWN)
+		if (cmd == CMD_RC_VOL_DOWN)
 			encCnt--;
 
 		/* Handle encoder */

@@ -6,7 +6,7 @@
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
-#include "rc5.h"
+#include "remote.h"
 #include "eeprom.h"
 #include "icons.h"
 
@@ -19,8 +19,9 @@ static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
 static volatile uint16_t displayTime;
 
-static volatile uint8_t rc5DeviceAddr;
-static volatile uint8_t rcCode[CMD_RC5_END];		/* Array with rc5 commands */
+static uint8_t rcType;
+static uint8_t rcAddr;
+static uint8_t rcCode[CMD_RC_END];					/* Array with RC commands */
 
 const static uint8_t font_dig_3x5[] PROGMEM = {
 	0x1F, 0x11, 0x1F, // 0
@@ -155,15 +156,15 @@ static void matrixShowSymBar(int8_t value)
 	return;
 }
 
-static uint8_t rc5CmdIndex(uint8_t rc5Cmd)
+static CmdID rcCmdIndex(uint8_t rcCmd)
 {
-	uint8_t i;
+	CmdID i;
 
-	for (i = 0; i < CMD_RC5_END; i++)
-		if (rc5Cmd == rcCode[i])
+	for (i = 0; i < CMD_RC_END; i++)
+		if (rcCmd == rcCode[i])
 			return i;
 
-	return CMD_EMPTY;
+	return CMD_RC_END;
 }
 
 ISR (TIMER0_OVF_vect)
@@ -171,7 +172,7 @@ ISR (TIMER0_OVF_vect)
 	TCNT0 = 255 - F_CPU/64/1000/POLL_FREQ;
 
 	uint8_t i;
-	static uint16_t rc5Timer;
+	static uint16_t rcTimer;
 
 	static volatile uint8_t stateBtnEnc;			/* Buttons and encoder raw state */
 
@@ -279,37 +280,37 @@ ISR (TIMER0_OVF_vect)
 		btnCnt = 0;
 	}
 
-	/* Place RC5 event to command buffer if enough RC5 timer ticks */
-	uint16_t rc5Buf = getRC5RawBuf();
+	/* Place RC event to command buffer if enough RC timer ticks */
+	uint16_t rcBuf = getRCRawBuf();
 
 	static uint8_t togBitNow = 0;
 	static uint8_t togBitPrev = 0;
 
-	uint8_t rc5CmdBuf = CMD_EMPTY;
-	uint8_t rc5Cmd;
+	uint8_t rcCmdBuf = CMD_END;
+	uint8_t rcCmd;
 
-	if ((rc5Buf != RC5_BUF_EMPTY) && ((rc5Buf & RC5_ADDR_MASK) >> 6 == rc5DeviceAddr)) {
-		if (rc5Buf & RC5_TOGB_MASK)
+	if ((rcBuf != RC5_BUF_EMPTY) && ((rcBuf & RC5_ADDR_MASK) >> 6 == rcAddr)) {
+		if (rcBuf & RC5_TOGB_MASK)
 			togBitNow = 1;
 		else
 			togBitNow = 0;
 
-		rc5Cmd = rc5Buf & RC5_COMM_MASK;
-		if ((togBitNow != togBitPrev) || (rc5Timer > RC5_LONG_PRESS)) {
-			rc5Timer = 0;
-			rc5CmdBuf = rc5CmdIndex(rc5Cmd);
+		rcCmd = rcBuf & RC5_COMM_MASK;
+		if ((togBitNow != togBitPrev) || (rcTimer > RC_LONG_PRESS)) {
+			rcTimer = 0;
+			rcCmdBuf = rcCmdIndex(rcCmd);
 		}
-		if (rc5Cmd == rcCode[CMD_RC5_VOL_UP] || rc5Cmd == rcCode[CMD_RC5_VOL_DOWN]) {
-			if (rc5Timer > RC5_VOL_REPEAT) {
-				rc5Timer = RC5_VOL_DELAY;
-				rc5CmdBuf = rc5CmdIndex(rc5Cmd);
+		if (rcCmd == rcCode[CMD_RC_VOL_UP] || rcCmd == rcCode[CMD_RC_VOL_DOWN]) {
+			if (rcTimer > RC_VOL_REPEAT) {
+				rcTimer = RC_VOL_DELAY;
+				rcCmdBuf = rcCmdIndex(rcCmd);
 			}
 		}
 		togBitPrev = togBitNow;
 	}
 
-	if (cmdBuf == CMD_EMPTY) {
-		cmdBuf = rc5CmdBuf;
+	if (cmdBuf == CMD_END) {
+		cmdBuf = rcCmdBuf;
 	}
 
 	/* Timer of current display mode */
@@ -317,8 +318,8 @@ ISR (TIMER0_OVF_vect)
 		displayTime--;
 
 	/* Time from last IR command */
-	if (rc5Timer < RC5_PRESS_LIMIT)
-		rc5Timer++;
+	if (rcTimer < RC_PRESS_LIMIT)
+		rcTimer++;
 
 	return;
 }
@@ -346,8 +347,6 @@ static void showIcon(const uint8_t iconNum)
 
 void matrixInit(void)
 {
-	uint8_t i;
-
 	DDR(ROW_01) |= ROW_01_LINE;
 	DDR(ROW_02) |= ROW_02_LINE;
 	DDR(ROW_03) |= ROW_03_LINE;
@@ -371,13 +370,12 @@ void matrixInit(void)
 	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
 	TCCR0 |= (0<<CS02) | (1<<CS01) | (1 <<CS00);	/* Set timer prescaller to 64 */
 
-	cmdBuf = CMD_EMPTY;
+	cmdBuf = CMD_END;
 	encCnt = 0;
 
-	/* Load RC5 device address and commands from eeprom */
-	rc5DeviceAddr = eeprom_read_byte(eepromRC5Addr);
-	for (i = 0; i < CMD_RC5_END; i++)
-		rcCode[i] = eeprom_read_byte(eepromRC5Cmd + i);
+	rcType = eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE);
+	rcAddr = eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR);
+	eeprom_read_block(rcCode, (uint8_t*)EEPROM_RC_CMD, CMD_RC_END);
 
 	return;
 }
@@ -454,10 +452,12 @@ int8_t getEncoder(void)
 	return ret;
 }
 
-uint8_t getCmdBuf(void)
+CmdID getCmdBuf(void)
 {
-	uint8_t ret = cmdBuf;
-	cmdBuf = CMD_EMPTY;
+	CmdID ret;
+
+	ret = cmdBuf;
+	cmdBuf = CMD_END;
 
 	return ret;
 }

@@ -16,8 +16,8 @@
 
 #define RC5_BUF_EMPTY	0
 
-void rc5Init(void);
+void rcInit(void);
 
-uint16_t getRC5RawBuf(void);
+uint16_t getRCRawBuf(void);
 
 #endif /* RC5_H */

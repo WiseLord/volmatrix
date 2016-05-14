@@ -11,9 +11,10 @@
 
 #define EEPROM_INPUT_ICONS			0x1C
 
-/* RC5 address and command */
-#define eepromRC5Addr			((void*)0x14)
-#define eepromRC5Cmd			((uint8_t*)0x20)
+/* RC eeprom data*/
+#define EEPROM_RC_TYPE				0x10
+#define EEPROM_RC_ADDR				0x14
+#define EEPROM_RC_CMD				0x20
 
 #endif /* EEPROM_H */
 

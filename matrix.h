@@ -19,19 +19,19 @@
 #define ENC_B				(1<<0)
 #define ENC_AB				(ENC_A | ENC_B)
 
-enum {
-	CMD_RC5_STBY,
-	CMD_RC5_MUTE,
-	CMD_RC5_MENU,
-	CMD_RC5_VOL_UP,
-	CMD_RC5_VOL_DOWN,
-	CMD_RC5_RED,
-	CMD_RC5_GREEN,
-	CMD_RC5_YELLOW,
-	CMD_RC5_BLUE,
-	CMD_RC5_NEXT,
+typedef enum {
+	CMD_RC_STBY,
+	CMD_RC_MUTE,
+	CMD_RC_MENU,
+	CMD_RC_VOL_UP,
+	CMD_RC_VOL_DOWN,
+	CMD_RC_RED,
+	CMD_RC_GREEN,
+	CMD_RC_YELLOW,
+	CMD_RC_BLUE,
+	CMD_RC_NEXT,
 
-	CMD_RC5_END,
+	CMD_RC_END,
 
 	CMD_BTN_1,
 	CMD_BTN_2,
@@ -40,8 +40,8 @@ enum {
 	CMD_BTN_2_LONG,
 	CMD_BTN_3_LONG,
 
-	CMD_EMPTY = 0xEF
-};
+	CMD_END
+} CmdID;
 
 enum {
 	MODE_STANDBY = MODE_SND_END,
@@ -67,10 +67,10 @@ enum {
 #define SHORT_PRESS			(100 * POLL_FREQ)
 #define LONG_PRESS			(600 * POLL_FREQ)
 
-#define RC5_LONG_PRESS		(800 * POLL_FREQ)
-#define RC5_VOL_DELAY		(360 * POLL_FREQ)
-#define RC5_VOL_REPEAT		(400 * POLL_FREQ)
-#define RC5_PRESS_LIMIT		(1000 * POLL_FREQ)
+#define RC_LONG_PRESS		(800 * POLL_FREQ)
+#define RC_VOL_DELAY		(360 * POLL_FREQ)
+#define RC_VOL_REPEAT		(400 * POLL_FREQ)
+#define RC_PRESS_LIMIT		(1000 * POLL_FREQ)
 
 void matrixInit(void);
 void matrixFill(uint8_t data);
@@ -81,7 +81,7 @@ void showMute(void);
 void showLoudness(void);
 
 int8_t getEncoder(void);
-uint8_t getCmdBuf(void);
+CmdID getCmdBuf(void);
 
 void setDisplayTime(uint16_t value);
 uint16_t getDisplayTime(void);

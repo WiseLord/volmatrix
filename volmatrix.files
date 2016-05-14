@@ -6,8 +6,8 @@ Makefile
 matrix.c
 matrix.h
 pins.h
-rc5.c
-rc5.h
+remote.c
+remote.h
 audio/audio.h
 audio/audioproc.c
 audio/audioproc.h
