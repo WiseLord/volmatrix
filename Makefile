@@ -35,9 +35,6 @@ AD_CMD   = $(AD_MCU) $(AD_PROG) $(AD_PORT) -V
 OBJS     = $(addprefix $(BUILDDIR)/, $(SRCS:.c=.o))
 ELF      = $(BUILDDIR)/$(TARG).elf
 
-# Dependencies
--include $(OBJS:.o=.d)
-
 all: $(ELF) size
 
 $(ELF): $(OBJS)
@@ -68,3 +65,6 @@ eeprom: $(ELF)
 .PHONY: fuse
 fuse:
 	$(AVRDUDE) $(AD_CMD) -U lfuse:w:0x24:m -U hfuse:w:0xD1:m
+
+# Dependencies
+-include $(OBJS:.o=.d)
