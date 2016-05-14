@@ -130,12 +130,13 @@ static void matrixShowNumber(int8_t value)			/* Show 3-digits decimal number */
 static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 {
 	uint8_t i;
+	uint8_t buf;
 
 	for (i = 0; i < 16; i++) {
+		buf = newBuf[i] & ~0xC0;
 		if (value > i)
-			newBuf[i] |= 0xC0;
-		else
-			newBuf[i] &= ~0xC0;
+			buf |= 0xC0;
+		newBuf[i] = buf;
 	}
 
 	return;
@@ -144,14 +145,19 @@ static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 static void matrixShowSymBar(int8_t value)
 {
 	uint8_t i;
+	uint8_t buf;
 
 	for (i = 0; i < 16; i++) {
-		if ((value && ((i < 8 && value < i - 7) || (i >= 8 && value > i - 8))) || (!value && (i == 7 || i == 8)))
-			newBuf[i] |= 0xC0;
-		else
-			newBuf[i] &= ~0xC0;
+		buf = newBuf[i] & ~0xC0;
+		if (value) {
+			if ((i < 8) == (value < i - 7))
+				buf |= 0xC0;
+		} else {
+			if (i == 7 || i == 8)
+				buf |= 0x80;
+		}
+		newBuf[i] = buf;
 	}
-
 
 	return;
 }
