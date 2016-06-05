@@ -26,7 +26,7 @@ typedef struct {
 	uint8_t repeat : 1;
 	uint8_t rsvd1 : 1;
 	uint8_t rsvd2 : 1;
-	uint8_t type : 4;
+	uint8_t rsvdtype : 4;
 	uint8_t address;
 	uint8_t command;
 } IRData;

@@ -180,11 +180,9 @@ ISR(INT1_vect)
 	if (rc5Cnt == 0 || rc6Cnt == 0) {
 		if (rc5Cnt == 0) {
 			rc6TogBit = (rc5Cmd & RC5_TOGB_MASK) != 0;
-			irData.type = IR_TYPE_RC5;
 			irData.address  = (rc5Cmd & RC5_ADDR_MASK) >> 6;
 			irData.command = (rc5Cmd & RC5_COMM_MASK) | (rc5Cmd & RC5_FIBT_MASK ? 0x00 : 0x40);
 		} else {
-			irData.type = IR_TYPE_RC6;
 			irData.address  = (rc6Cmd & RC6_ADDR_MASK) >> 8;
 			irData.command = rc6Cmd & RC6_COMM_MASK;
 		}
@@ -212,7 +210,6 @@ IRData getIrData()
 
 void setIrData(uint8_t type, uint8_t addr, uint8_t cmd)
 {
-	irData.type = type;
 	irData.address = addr;
 	irData.command = cmd;
 

@@ -321,7 +321,7 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 
 	CmdID rcCmdBuf = CMD_END;
 
-	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
+	if (ir.ready && ir.address == rcAddr) {
 		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
 			rcTimer = 0;
 			rcCmdBuf = rcCmdIndex(ir.command);
@@ -494,13 +494,6 @@ void showLearn(void)
 		newBuf[8] |= 0x40;
 		newBuf[8] &= ~0x80;
 	}
-	if (irBuf.type == IR_TYPE_RC5) {
-		newBuf[9] |= 0x80;
-		newBuf[9] &= ~0x40;
-	} else {
-		newBuf[9] |= 0x40;
-		newBuf[9] &= ~0x80;
-	}
 
 	return;
 }
@@ -509,7 +502,6 @@ void nextRcCmd(void)
 {
 	IRData irBuf = getIrData();
 
-	eeprom_update_byte((uint8_t*)EEPROM_RC_TYPE, irBuf.type);
 	eeprom_update_byte((uint8_t*)EEPROM_RC_ADDR, irBuf.address);
 	eeprom_update_byte((uint8_t*)EEPROM_RC_CMD + rcIndex, irBuf.command);
 
