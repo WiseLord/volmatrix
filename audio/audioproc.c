@@ -241,6 +241,9 @@ void sndInit(void)
 		break;
 	}
 
+	if (_input >= _inCnt)
+		_input = 0;
+
 	return;
 }
 

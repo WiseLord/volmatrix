@@ -20,13 +20,13 @@
 #define ENC_AB				(ENC_A | ENC_B)
 
 typedef enum {
-	CMD_RC_STBY,
+	CMD_RC_SAVE,
 	CMD_RC_MUTE,
 	CMD_RC_MENU,
 	CMD_RC_VOL_UP,
 	CMD_RC_VOL_DOWN,
 	CMD_RC_NEXT,
-	CMD_RC_SAVE,
+	CMD_RC_STBY,
 
 	CMD_RC_END,
 
@@ -38,6 +38,7 @@ typedef enum {
 	CMD_BTN_3_LONG,
 
 	CMD_BTN_1_2_LONG,
+	CMD_BTN_1_2_3_LONG,
 
 	CMD_END
 } CmdID;
@@ -72,9 +73,9 @@ enum {
 	SYM_NUMBERS
 };
 
-#define TIMEOUT_AUDIO		2000
+#define TIMEOUT_AUDIO		5000
 #define TIMEOUT_STBY		1000
-#define TIMEOUT_LEARN		10000
+#define TIMEOUT_LEARN		20000
 
 /* Buttons poll frequency, kHz */
 #define POLL_FREQ			4
@@ -99,6 +100,7 @@ void showStby(void);
 void showLearn(void);
 void nextRcCmd(void);
 void switchTestMode(uint8_t index);
+void resetCodes(void);
 
 void updateScreen(uint8_t effect);
 

@@ -21,7 +21,6 @@ static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
 static volatile uint16_t displayTime;
 
-static uint8_t rcType;
 static uint8_t rcAddr;
 static uint8_t rcCode[CMD_RC_END];					/* Array with RC commands */
 static uint8_t rcIndex = 0;							/* Index of RC command being learned */
@@ -114,15 +113,16 @@ static void matrixShowDecimal(int8_t value)			/* Show decimal number */
 
 	return;
 }
-/*
-static void matrixShowHex(uint8_t value)
+
+static void matrixShowHex(uint8_t value, uint8_t twoChars)
 {
-	matrixShowDig(SYM_NUMBERS + (value / 16));
+	if (twoChars)
+		matrixShowDig(SYM_NUMBERS + (value / 16));
 	matrixShowDig(SYM_NUMBERS + (value % 16));
 
 	return;
 }
-*/
+
 static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 {
 	uint8_t i;
@@ -171,7 +171,6 @@ static CmdID rcCmdIndex(uint8_t rcCmd)
 
 static void rcCodesInit(void)
 {
-	rcType = eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE);
 	rcAddr = eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR);
 	eeprom_read_block(rcCode, (uint8_t*)EEPROM_RC_CMD, CMD_RC_END);
 
@@ -293,6 +292,9 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 					break;
 				case BTN_1 | BTN_2:
 					cmdBuf = CMD_BTN_1_2_LONG;
+					break;
+				case BTN_1 | BTN_2 | BTN_3:
+					cmdBuf = CMD_BTN_1_2_3_LONG;
 					break;
 				}
 			}
@@ -475,25 +477,12 @@ void showLearn(void)
 
 	matrixFill(0x00);
 
-	matrixSetPos(5);
-	matrixShowDecimal(rcIndex);
-
-	// Binary data of RC addres
-	newBuf[0] = rcAddr;
-	newBuf[1] = irBuf.address;
+	matrixSetPos(13);
+	matrixShowHex(rcIndex, 0);
 
 	// Binary data of RC command
-	newBuf[4] = rcCode[rcIndex];
-	newBuf[5] = irBuf.command;
-
-	// Binary data of RC type
-	if (rcType == IR_TYPE_RC5) {
-		newBuf[8] |= 0x80;
-		newBuf[8] &= ~0x40;
-	} else {
-		newBuf[8] |= 0x40;
-		newBuf[8] &= ~0x80;
-	}
+	matrixSetPos(0);
+	matrixShowHex(irBuf.command, 1);
 
 	return;
 }
@@ -509,7 +498,7 @@ void nextRcCmd(void)
 	rcCodesInit();
 
 	if (++rcIndex >= CMD_RC_END)
-		rcIndex = CMD_RC_STBY;
+		rcIndex = CMD_RC_SAVE;
 
 	switchTestMode(rcIndex);
 
@@ -522,6 +511,24 @@ void switchTestMode(uint8_t index)
 	setIrData(eeprom_read_byte((uint8_t*)EEPROM_RC_TYPE),
 			  eeprom_read_byte((uint8_t*)EEPROM_RC_ADDR),
 			  eeprom_read_byte((uint8_t*)EEPROM_RC_CMD + rcIndex));
+
+	return;
+}
+
+void resetCodes(void)
+{
+	rcAddr = 0x00; // Default TV remote
+
+	rcCode[0] = 0x0C; // Save
+	rcCode[1] = 0x0D; // Mute
+	rcCode[2] = 0x70; // Menu
+	rcCode[3] = 0x10; // Vol_up
+	rcCode[4] = 0x11; // Vol_down
+	rcCode[5] = 0x6F; // Next
+	rcCode[6] = 0x6F; // Standby
+
+	eeprom_update_byte((uint8_t*)EEPROM_RC_ADDR, rcAddr);
+	eeprom_update_block(rcCode, (uint8_t*)EEPROM_RC_CMD, CMD_RC_END);
 
 	return;
 }

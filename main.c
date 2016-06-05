@@ -8,7 +8,7 @@
 #define STBY_ON						1
 #define STBY_OFF					0
 
-static uint8_t dispMode = MODE_STANDBY;
+static uint8_t dispMode = MODE_SND_VOLUME;
 
 static void powerOn(void)
 {
@@ -17,15 +17,7 @@ static void powerOn(void)
 	setDisplayTime(TIMEOUT_AUDIO);
 }
 
-static void powerOff(void)
-{
-	sndSetMute(MUTE_ON);
-	sndSave();
-	dispMode = MODE_STANDBY;
-	setDisplayTime(TIMEOUT_STBY);
-}
-
-int main(void)
+static void hwInit(void)
 {
 	rcInit();
 	sndInit();
@@ -33,9 +25,13 @@ int main(void)
 	sei();
 
 	_delay_ms(100);
-	powerOff();
 	sndInit();
 	powerOn();
+}
+
+int main(void)
+{
+	hwInit();
 
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_END;
@@ -46,34 +42,22 @@ int main(void)
 		encCnt = getEncoder();
 		cmd = getCmdBuf();
 
-		/* Don't handle commands in standby mode except some */
-		if (dispMode == MODE_STANDBY) {
-			encCnt = 0;
-			if (cmd != CMD_RC_STBY && cmd != CMD_BTN_1 && cmd != CMD_BTN_1_2_LONG)
-				cmd = CMD_END;
-		}
 		/* Don't handle buttons in learn mode except some */
 		if (dispMode == MODE_LEARN) {
 			if (encCnt || cmd != CMD_END)
 				setDisplayTime(TIMEOUT_LEARN);
-			if (cmd != CMD_BTN_1_LONG && cmd != CMD_BTN_3)
+			if (cmd != CMD_BTN_1_LONG && cmd != CMD_BTN_3 && cmd != CMD_BTN_1_2_3_LONG)
 				cmd = CMD_END;
 		}
 
 		/* Handle command */
 		switch (cmd) {
 		case CMD_RC_SAVE:
-			if (dispMode != MODE_STANDBY) {
-				dispPrev = MODE_STANDBY;
-				sndSave();
-			}
-			break;
-		case CMD_RC_STBY:
 		case CMD_BTN_1:
-			if (dispMode == MODE_STANDBY)
-				powerOn();
-			else
-				powerOff();
+			sndSave();
+			dispPrev = MODE_STANDBY;
+			dispMode = MODE_SND_VOLUME;
+			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_MUTE:
 		case CMD_BTN_2:
@@ -90,6 +74,7 @@ int main(void)
 		case CMD_BTN_3:
 			if (dispMode == MODE_LEARN) {
 				nextRcCmd();
+				setDisplayTime(TIMEOUT_LEARN);
 			} else {
 				sndNextParam(&dispMode);
 				setDisplayTime(TIMEOUT_AUDIO);
@@ -97,7 +82,8 @@ int main(void)
 			break;
 		case CMD_BTN_1_LONG:
 			if (dispMode == MODE_LEARN)
-				powerOff();
+				dispMode = MODE_SND_VOLUME;
+			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:
@@ -113,8 +99,18 @@ int main(void)
 		case CMD_BTN_1_2_LONG:
 			if (dispMode == MODE_STANDBY)
 				dispMode = MODE_LEARN;
-			switchTestMode(CMD_RC_STBY);
+			switchTestMode(CMD_RC_SAVE);
 			setDisplayTime(TIMEOUT_LEARN);
+			break;
+		case CMD_BTN_1_2_3_LONG:
+			dispMode = MODE_SND_VOLUME;
+			setDisplayTime(TIMEOUT_AUDIO);
+			resetCodes();
+			hwInit();
+			dispPrev = MODE_STANDBY;
+			dispMode = MODE_SND_VOLUME;
+			setDisplayTime(TIMEOUT_AUDIO);
+
 			break;
 		}
 
@@ -127,8 +123,9 @@ int main(void)
 		/* Handle encoder */
 		if (encCnt) {
 			switch (dispMode) {
-			case MODE_STANDBY:
+			case MODE_LEARN:
 				break;
+			case MODE_STANDBY:
 			case MODE_MUTE:
 				dispMode = MODE_SND_VOLUME;
 			default:
@@ -141,13 +138,14 @@ int main(void)
 
 		/* Exid to default mode if timer expired */
 		if (getDisplayTime() == 0) {
-			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
-				dispMode = MODE_STANDBY;
+			if (dispMode == MODE_LEARN) {
+				dispMode = MODE_SND_VOLUME;
+				setDisplayTime(TIMEOUT_AUDIO);
 			} else {
 				if (sndGetMute() == MUTE_ON)
 					dispMode = MODE_MUTE;
 				else
-					dispMode = MODE_SND_VOLUME;
+					dispMode = MODE_STANDBY;
 			}
 		}
 
