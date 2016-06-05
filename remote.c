@@ -38,11 +38,6 @@ ISR(INT1_vect)
 	// RC pin state on interrupt event is inverted due to inverted IR receiver polarity
 	uint8_t rcPin = !(PIN(RC) & RC_LINE);
 
-	// NEC protocol variables
-	static uint8_t necCnt = 0;						// NEC bit counter
-	static NECCmd necCmd;							// NEC command
-	static NECState necState = STATE_NEC_IDLE;		// NEC decoding state
-
 	// RC5/RC6 protocol variables
 	static uint8_t rc5Cnt = 16;						// RC5 bit counter
 	static uint16_t rc5Cmd = 0;						// RC5 command
@@ -55,38 +50,6 @@ ISR(INT1_vect)
 	uint8_t rc6TogBit = 0;
 
 	if (rcPin) {
-		// Try to decode as NEC sequence
-		if (necState == STATE_NEC_INIT) {
-			if (RC_NEAR(delay, NEC_START)) {
-				necState = STATE_NEC_RECEIVE;
-			} else if (RC_NEAR(delay, NEC_REPEAT) && ovfCnt < 2) {
-				irData.repeat = 1;
-				irData.ready = 1;
-				ovfCnt = 0;
-			}
-			necCnt = 0;
-		} else if (necState == STATE_NEC_RECEIVE) {
-			necCnt++;
-			necCmd.raw >>= 1;
-			if (RC_NEAR(delay, NEC_ZERO))
-				necCmd.raw &= ~0x80000000;
-			else if (RC_NEAR(delay, NEC_ONE))
-				necCmd.raw |= 0x80000000;
-			else
-				necCnt = 0;
-			if (necCnt == 32) {
-				if ((uint8_t)(~necCmd.ncmd) == necCmd.cmd) {
-					irData.ready = 1;
-					if (ovfCnt < 2)
-						irData.repeat = 1;
-					else
-						irData.repeat = 0;
-					irData.address = necCmd.laddr;
-					irData.command = necCmd.cmd;
-					ovfCnt = 0;
-				}
-			}
-		}
 		// Try to decode as RC6 sequence
 		if (RC_NEAR(delay, RC6_1T)) {
 			if (rc6State == STATE_RC5_START0) {
@@ -151,18 +114,6 @@ ISR(INT1_vect)
 			rc5State = STATE_RC5_MID1;
 		}
 	} else {
-		// Try to decode as NEC sequence
-		if (RC_NEAR(delay, NEC_PULSE) && necState != STATE_NEC_REPEAT) {
-			necState = STATE_NEC_RECEIVE;
-		} else if (RC_NEAR(delay, NEC_INIT)) {
-			necState = STATE_NEC_INIT;
-			irData.type = IR_TYPE_NEC;
-		} else if (RC_NEAR(delay, SAM_INIT)) {
-			necState = STATE_NEC_INIT;
-			irData.type = IR_TYPE_SAM;
-		} else {
-			necState = STATE_NEC_IDLE;
-		}
 		// Try to decode as RC6 sequence
 		if (RC_NEAR(delay, RC6_1T)) {
 			if (rc6State == STATE_RC5_START1) {
