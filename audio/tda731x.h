@@ -2,7 +2,6 @@
 #define TDA731X_H
 
 #include <inttypes.h>
-#include "audio.h"
 
 /* I2C address */
 #define TDA731X_I2C_ADDR			0b10001000
@@ -26,14 +25,10 @@
 #define TDA7318_IN_CNT				4
 #define PT2314_IN_CNT				4
 
-void tda731xInit(sndParam *sp);
-void tda731xSetVolume(int8_t val);
-void tda731xSetBass(int8_t val);
-void tda731xSetTreble(int8_t val);
-void tda731xSetBalance(int8_t val);
-void tda731xSetGain(int8_t val);
-void tda731xSetInput(uint8_t in);
-void tda731xSetLoudness(uint8_t val);
-void tda731xSetMute(uint8_t val);
+void tda731xSetVolume(void);
+void tda731xSetBT(void);
+void tda731xSetSpeakers(void);
+void tda731xSetInput(void);
+void tda731xSetMute(void);
 
 #endif /* TDA731X_H */

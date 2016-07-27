@@ -25,6 +25,8 @@ enum {
 	ICON_END
 };
 
+#define ICON24_END		ICON_END
+
 extern const uint8_t icons[];
 
 #endif /*ICONS_H */

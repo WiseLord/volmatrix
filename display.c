@@ -1,4 +1,4 @@
-#include "matrix.h"
+#include "display.h"
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -8,7 +8,6 @@
 
 #include "remote.h"
 #include "eeprom.h"
-#include "icons.h"
 
 static uint8_t pos;									/* Current position in framebuffer */
 
@@ -411,7 +410,7 @@ void matrixFill(uint8_t data)
 
 void showSndParam(sndMode mode, uint8_t icon)
 {
-	sndParam *param = sndParAddr(mode);
+	sndParam *param = &sndPar[mode];
 	int16_t value = param->value;
 	int8_t min = pgm_read_byte(&param->grid->min);
 	int8_t max = pgm_read_byte(&param->grid->max);

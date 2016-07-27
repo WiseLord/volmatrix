@@ -1,8 +1,8 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 
-#include "matrix.h"
-#include "audio/audioproc.h"
+#include "display.h"
+#include "audio/audio.h"
 #include "remote.h"
 
 #define STBY_ON						1
@@ -19,7 +19,7 @@ static void powerOn(void)
 
 static void powerOff(void)
 {
-	sndSetMute(MUTE_ON);
+	sndSetMute(1);
 	sndPowerOff();
 	dispMode = MODE_STANDBY;
 	setDisplayTime(TIMEOUT_STBY);
@@ -38,7 +38,6 @@ int main(void)
 
 	int8_t encCnt = 0;
 	uint8_t cmd = CMD_END;
-	uint8_t input;
 	static uint8_t dispPrev = MODE_STANDBY;
 
 	while(1) {
@@ -70,12 +69,12 @@ int main(void)
 			break;
 		case CMD_RC_MUTE:
 		case CMD_BTN_2:
-			if (sndGetMute() == MUTE_OFF) {
-				sndSetMute(MUTE_ON);
-				dispMode = MODE_MUTE;
-			} else {
-				sndSetMute(MUTE_OFF);
+			if (aproc.mute) {
+				sndSetMute(0);
 				dispMode = MODE_SND_VOLUME;
+			} else {
+				sndSetMute(1);
+				dispMode = MODE_MUTE;
 			}
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
@@ -92,18 +91,8 @@ int main(void)
 		case CMD_RC_GREEN:
 		case CMD_RC_YELLOW:
 		case CMD_RC_BLUE:
-			if (cmd == CMD_RC_BLUE && sndInputCnt() < 4) {
-				if (sndGetLoudness()) {
-					sndSetLoudness(LOUDNESS_OFF);
-					dispMode = MODE_SND_VOLUME;
-				} else {
-					sndSetLoudness(LOUDNESS_ON);
-					dispMode = MODE_LOUDNESS;
-				}
-			} else {
-				sndSetInput(cmd - CMD_RC_RED);
-				dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
-			}
+			sndSetInput(cmd - CMD_RC_RED);
+			dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_BTN_1_LONG:
@@ -111,24 +100,21 @@ int main(void)
 				powerOff();
 			break;
 		case CMD_BTN_2_LONG:
-			if (sndGetLoudness()) {
-				sndSetLoudness(LOUDNESS_OFF);
+			if (aproc.loudness) {
+				sndSetLoudness(0);
 				dispMode = MODE_SND_VOLUME;
 			} else {
-				sndSetLoudness(LOUDNESS_ON);
+				sndSetLoudness(1);
 				dispMode = MODE_LOUDNESS;
-				setDisplayTime(TIMEOUT_AUDIO);
 			}
+			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:
-			input = sndGetInput();
-			if (dispMode >= MODE_SND_GAIN0 && dispMode <= MODE_SND_GAIN3)
-				input++;
-			if (input >= sndInputCnt())
-				input = 0;
-			sndSetInput(input);
-			dispMode = MODE_SND_GAIN0 + input;
+			if (dispMode >= MODE_SND_GAIN0 && dispMode < MODE_SND_END)
+				aproc.input++;
+			sndSetInput(aproc.input);
+			dispMode = MODE_SND_GAIN0 + aproc.input;
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_BTN_1_2_LONG:
@@ -153,7 +139,7 @@ int main(void)
 			case MODE_MUTE:
 				dispMode = MODE_SND_VOLUME;
 			default:
-				sndSetMute(MUTE_OFF);
+				sndSetMute(0);
 				sndChangeParam(dispMode, encCnt);
 				setDisplayTime(TIMEOUT_AUDIO);
 				break;
@@ -165,7 +151,7 @@ int main(void)
 			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
 				dispMode = MODE_STANDBY;
 			} else {
-				if (sndGetMute() == MUTE_ON)
+				if (aproc.mute)
 					dispMode = MODE_MUTE;
 				else
 					dispMode = MODE_SND_VOLUME;

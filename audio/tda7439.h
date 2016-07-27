@@ -2,7 +2,6 @@
 #define TDA7439_H
 
 #include <inttypes.h>
-#include "audio.h"
 
 /* I2C address */
 #define TDA7439_I2C_ADDR			0b10001000
@@ -17,21 +16,18 @@
 #define TDA7439_VOLUME_RIGHT		0x06
 #define TDA7439_VOLUME_LEFT			0x07
 
+#define TDA7439_SPEAKER_MUTE		0b01111111
+
 /* I2C autoincrement flag */
 #define TDA7439_AUTO_INC			0x10
 
 /* Number of inputs */
 #define TDA7439_IN_CNT				4
 
-void tda7439Init(sndParam *sp);
-void tda7439SetVolume(int8_t val);
-void tda7439SetBass(int8_t val);
-void tda7439SetMiddle(int8_t val);
-void tda7439SetTreble(int8_t val);
-void tda7439SetPreamp(int8_t val);
-void tda7439SetBalance(int8_t val);
-void tda7439SetGain(int8_t val);
-void tda7439SetInput(uint8_t in);
-void tda7439SetMute(uint8_t val);
+void tda7439SetSpeakers(void);
+void tda7439SetBMT(void);
+void tda7439SetPreamp(void);
+void tda7439SetInput(void);
+void tda7439SetMute(void);
 
 #endif /* TDA7439_H */

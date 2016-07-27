@@ -4,7 +4,8 @@
 #include <inttypes.h>
 #include "pins.h"
 
-#include "audio/audioproc.h"
+#include "icons.h"
+#include "audio/audio.h"
 
 #define ROWS				16
 

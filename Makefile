@@ -18,6 +18,11 @@ DEPS     = -MMD -MP -MT $(BUILDDIR)/$(*F).o -MF $(BUILDDIR)/$(*D)/$(*F).d
 CFLAGS   = $(DEBUG) -lm $(OPTIMIZE) $(DEPS) -mmcu=$(MCU) -DF_CPU=$(F_CPU)
 LDFLAGS  = $(DEBUG) -mmcu=$(MCU) -Wl,-gc-sections -mrelax
 
+# Main definitions
+DEFINES  += -D_NO_TXT_LABELS -D_NO_MUTE_PORT
+# Supported audioprocessors
+DEFINES += -D_TDA7439 -D_TDA731X -D_TDA7448 -D_PT232X -D_TEA63X0
+
 # AVR toolchain and flasher
 CC       = avr-gcc
 OBJCOPY  = avr-objcopy
@@ -48,9 +53,8 @@ size:
 
 $(BUILDDIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(DEFINES) -c -o $@ $<
 
-.PHONY: clean
 clean:
 	rm -rf $(BUILDDIR)
 
@@ -59,10 +63,9 @@ flash: $(ELF)
 	$(AVRDUDE) $(AD_CMD) -U flash:w:flash/$(TARG).hex:i
 
 .PHONY: eeprom
-eeprom: $(ELF)
+eeprom:
 	$(AVRDUDE) $(AD_CMD) -U eeprom:w:eeprom/$(TARG).bin:r
 
-.PHONY: fuse
 fuse:
 	$(AVRDUDE) $(AD_CMD) -U lfuse:w:0x24:m -U hfuse:w:0xD1:m
 
