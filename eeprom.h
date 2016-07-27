@@ -4,17 +4,24 @@
 /* Audio parameters values */
 #define EEPROM_VOLUME				0x00
 
-/* Audio processor values */
-#define EEPROM_AUDIOPROC			0x18
-#define EEPROM_INPUT				0x19
-#define EEPROM_LOUDNESS				0x1A
+/* Audio parameters values */
+#define EEPROM_AUDIOPROC			0x20
+#define EEPROM_MAX_INPUT_CNT		0x21
+#define EEPROM_INPUT				0x22
+#define EEPROM_LOUDNESS				0x23
+#define EEPROM_SURROUND				0x24
+#define EEPROM_EFFECT3D				0x25
+#define EEPROM_TONE_DEFEAT			0x26
 
-#define EEPROM_INPUT_ICONS			0x1C
+#define EEPROM_INPUT_ICONS			0x28
+
+/* Other parameters */
+#define EEPROM_ENC_RES				0x36
 
 /* RC eeprom data*/
-#define EEPROM_RC_TYPE				0x10
-#define EEPROM_RC_ADDR				0x14
-#define EEPROM_RC_CMD				0x20
+#define EEPROM_RC_TYPE				0x3E
+#define EEPROM_RC_ADDR				0x3F
+#define EEPROM_RC_CMD				0x40
 
 #endif /* EEPROM_H */
 
