@@ -113,15 +113,16 @@ static void matrixShowDecimal(int8_t value)			/* Show decimal number */
 
 	return;
 }
-/*
-static void matrixShowHex(uint8_t value)
+
+static void matrixShowHex(uint8_t value, uint8_t twoChars)
 {
-	matrixShowDig(SYM_NUMBERS + (value / 16));
+	if (twoChars)
+		matrixShowDig(SYM_NUMBERS + (value / 16));
 	matrixShowDig(SYM_NUMBERS + (value % 16));
 
 	return;
 }
-*/
+
 static void matrixShowBar(int8_t value)				/* Show asimmetric bar 0..16 */
 {
 	uint8_t i;
@@ -461,32 +462,12 @@ void showLearn(void)
 
 	matrixFill(0x00);
 
-	matrixSetPos(5);
-	matrixShowDecimal(rcIndex);
-
-	// Binary data of RC addres
-	newBuf[0] = rcAddr;
-	newBuf[1] = irBuf.address;
+	matrixSetPos(13);
+	matrixShowHex(rcIndex, 0);
 
 	// Binary data of RC command
-	newBuf[4] = rcCode[rcIndex];
-	newBuf[5] = irBuf.command;
-
-	// Binary data of RC type
-	if (rcType == IR_TYPE_RC5) {
-		newBuf[8] |= 0x80;
-		newBuf[8] &= ~0x40;
-	} else {
-		newBuf[8] |= 0x40;
-		newBuf[8] &= ~0x80;
-	}
-	if (irBuf.type == IR_TYPE_RC5) {
-		newBuf[9] |= 0x80;
-		newBuf[9] &= ~0x40;
-	} else {
-		newBuf[9] |= 0x40;
-		newBuf[9] &= ~0x80;
-	}
+	matrixSetPos(0);
+	matrixShowHex(irBuf.command, 1);
 
 	return;
 }
