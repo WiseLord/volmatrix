@@ -135,8 +135,10 @@ int main(void)
 		if (encCnt) {
 			switch (dispMode) {
 			case MODE_STANDBY:
+			case MODE_LEARN:
 				break;
 			case MODE_MUTE:
+			case MODE_LOUDNESS:
 				dispMode = MODE_SND_VOLUME;
 			default:
 				sndSetMute(0);
