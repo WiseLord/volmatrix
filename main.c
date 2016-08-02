@@ -100,13 +100,11 @@ int main(void)
 				powerOff();
 			break;
 		case CMD_BTN_2_LONG:
-			if (aproc.loudness) {
-				sndSetLoudness(0);
-				dispMode = MODE_SND_VOLUME;
-			} else {
-				sndSetLoudness(1);
+			sndSwitchExtra(APROC_EXTRA_LOUDNESS);
+			if (aproc.extra & APROC_EXTRA_LOUDNESS)
 				dispMode = MODE_LOUDNESS;
-			}
+			else
+				dispMode = MODE_SND_VOLUME;
 			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_NEXT:
