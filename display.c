@@ -348,22 +348,23 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 	return;
 }
 
-static void showIcon(const uint8_t iconNum)
+static void showIcon(uint8_t icon)
 {
-	uint8_t i;
+	uint8_t ic = icon;
 	uint8_t pgmData;
 
-	const uint8_t *icon;
+	if (ic >= MODE_SND_GAIN0 && ic < MODE_SND_END)
+		ic = eeprom_read_byte((uint8_t*)(EEPROM_INPUT_ICONS + (ic - MODE_SND_GAIN0)));
+	if (ic < ICON24_END)
+		icon = ic;
 
-	icon = &icons[5 * iconNum];
+	const uint8_t *icPtr = &icons[5 * icon];
 
-	if (icon) {
-		for (i = 0; i < 5; i++) {
-			pgmData = pgm_read_byte(icon + i);
-			pgmData &= 0x01F;
-			newBuf[i] &= 0xE0;
-			newBuf[i] |= pgmData;
-		}
+	for (ic = 0; ic < 5; ic++) {
+		pgmData = pgm_read_byte(icPtr + ic);
+		pgmData &= 0x01F;
+		newBuf[ic] &= 0xE0;
+		newBuf[ic] |= pgmData;
 	}
 
 	return;
@@ -412,7 +413,7 @@ void showSndParam(sndMode mode, uint8_t icon)
 	int8_t max = pgm_read_byte(&param->grid->max);
 
 	if (icon == ICON_NATIVE)
-		showIcon(param->icon);
+		showIcon(mode);
 
 	matrixSetPos(5);
 	matrixShowDecimal(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
