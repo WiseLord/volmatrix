@@ -108,6 +108,7 @@ void updateScreen(uint8_t effect);
 
 int8_t getEncoder(void);
 CmdID getCmdBuf(void);
+CmdID getRcBuf(void);
 
 void setDisplayTime(uint16_t value);
 uint16_t getDisplayTime(void);

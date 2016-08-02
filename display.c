@@ -19,6 +19,7 @@ static volatile int8_t encCnt;
 static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
 static volatile uint16_t displayTime;
+static volatile uint16_t rcTimer;
 
 static uint8_t rcType;
 static uint8_t rcAddr;
@@ -235,8 +236,6 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 {
 	// 8000000/256/8 = 3906 polls/sec
 
-	static uint16_t rcTimer;
-
 	uint8_t btnNow;
 	static uint8_t btnPrev = BTN_STATE_0;
 	static int16_t btnCnt = 0;						/* Buttons press duration value */
@@ -315,27 +314,6 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 		}
 		btnCnt = 0;
 	}
-
-	/* Place RC5 event to command buffer if enough RC5 timer ticks */
-	IRData ir = takeIrData();
-
-	CmdID rcCmdBuf = CMD_END;
-
-	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
-		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
-			rcTimer = 0;
-			rcCmdBuf = rcCmdIndex(ir.command);
-		}
-		if (ir.command == rcCode[CMD_RC_VOL_UP] || ir.command == rcCode[CMD_RC_VOL_DOWN]) {
-			if (rcTimer > RC_VOL_REPEAT) {
-				rcTimer = RC_VOL_DELAY;
-				rcCmdBuf = rcCmdIndex(ir.command);
-			}
-		}
-	}
-
-	if (cmdBuf == CMD_END)
-		cmdBuf = rcCmdBuf;
 
 	/* Timer of current display mode */
 	if (displayTime)
@@ -544,6 +522,30 @@ CmdID getCmdBuf(void)
 	cmdBuf = CMD_END;
 
 	return ret;
+}
+
+CmdID getRcBuf(void)
+{
+
+	/* Place RC5 event to command buffer if enough RC5 timer ticks */
+	IRData ir = takeIrData();
+
+	CmdID rcCmdBuf = CMD_END;
+
+	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
+		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
+			rcTimer = 0;
+			rcCmdBuf = rcCmdIndex(ir.command);
+		}
+		if (ir.command == rcCode[CMD_RC_VOL_UP] || ir.command == rcCode[CMD_RC_VOL_DOWN]) {
+			if (rcTimer > RC_VOL_REPEAT) {
+				rcTimer = RC_VOL_DELAY;
+				rcCmdBuf = rcCmdIndex(ir.command);
+			}
+		}
+	}
+
+	return rcCmdBuf;
 }
 
 void setDisplayTime(uint16_t value)

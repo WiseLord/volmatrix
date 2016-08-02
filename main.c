@@ -44,6 +44,10 @@ int main(void)
 		encCnt = getEncoder();
 		cmd = getCmdBuf();
 
+		/* If no command from buttons, try remote control */
+		if (cmd == CMD_END)
+			cmd = getRcBuf();
+
 		/* Don't handle commands in standby mode except some */
 		if (dispMode == MODE_STANDBY) {
 			encCnt = 0;
