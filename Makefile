@@ -19,7 +19,7 @@ CFLAGS   = $(DEBUG) -lm $(OPTIMIZE) $(DEPS) -mmcu=$(MCU) -DF_CPU=$(F_CPU)
 LDFLAGS  = $(DEBUG) -mmcu=$(MCU) -Wl,-gc-sections -mrelax
 
 # Main definitions
-DEFINES  += -D_NO_TXT_LABELS -D_NO_MUTE_PORT
+DEFINES  += -D_NO_MUTE_PORT
 # Supported audioprocessors
 DEFINES += -D_TDA731X
 

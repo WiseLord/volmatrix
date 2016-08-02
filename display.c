@@ -19,6 +19,7 @@ static volatile int8_t encCnt;
 static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
 static volatile uint16_t displayTime;
+static volatile uint16_t rcTimer;
 
 static uint8_t rcType;
 static uint8_t rcAddr;
@@ -235,8 +236,6 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 {
 	// 8000000/256/8 = 3906 polls/sec
 
-	static uint16_t rcTimer;
-
 	uint8_t btnNow;
 	static uint8_t btnPrev = BTN_STATE_0;
 	static int16_t btnCnt = 0;						/* Buttons press duration value */
@@ -316,27 +315,6 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 		btnCnt = 0;
 	}
 
-	/* Place RC5 event to command buffer if enough RC5 timer ticks */
-	IRData ir = takeIrData();
-
-	CmdID rcCmdBuf = CMD_END;
-
-	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
-		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
-			rcTimer = 0;
-			rcCmdBuf = rcCmdIndex(ir.command);
-		}
-		if (ir.command == rcCode[CMD_RC_VOL_UP] || ir.command == rcCode[CMD_RC_VOL_DOWN]) {
-			if (rcTimer > RC_VOL_REPEAT) {
-				rcTimer = RC_VOL_DELAY;
-				rcCmdBuf = rcCmdIndex(ir.command);
-			}
-		}
-	}
-
-	if (cmdBuf == CMD_END)
-		cmdBuf = rcCmdBuf;
-
 	/* Timer of current display mode */
 	if (displayTime)
 		displayTime--;
@@ -348,22 +326,23 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 	return;
 }
 
-static void showIcon(const uint8_t iconNum)
+static void showIcon(uint8_t icon)
 {
-	uint8_t i;
+	uint8_t ic = icon;
 	uint8_t pgmData;
 
-	const uint8_t *icon;
+	if (ic >= MODE_SND_GAIN0 && ic < MODE_SND_END)
+		ic = eeprom_read_byte((uint8_t*)(EEPROM_INPUT_ICONS + (ic - MODE_SND_GAIN0)));
+	if (ic < ICON24_END)
+		icon = ic;
 
-	icon = &icons[5 * iconNum];
+	const uint8_t *icPtr = &icons[5 * icon];
 
-	if (icon) {
-		for (i = 0; i < 5; i++) {
-			pgmData = pgm_read_byte(icon + i);
-			pgmData &= 0x01F;
-			newBuf[i] &= 0xE0;
-			newBuf[i] |= pgmData;
-		}
+	for (ic = 0; ic < 5; ic++) {
+		pgmData = pgm_read_byte(icPtr + ic);
+		pgmData &= 0x01F;
+		newBuf[ic] &= 0xE0;
+		newBuf[ic] |= pgmData;
 	}
 
 	return;
@@ -412,7 +391,7 @@ void showSndParam(sndMode mode, uint8_t icon)
 	int8_t max = pgm_read_byte(&param->grid->max);
 
 	if (icon == ICON_NATIVE)
-		showIcon(param->icon);
+		showIcon(mode);
 
 	matrixSetPos(5);
 	matrixShowDecimal(param->value * ((pgm_read_byte(&param->grid->step) + 4) >> 3));
@@ -543,6 +522,30 @@ CmdID getCmdBuf(void)
 	cmdBuf = CMD_END;
 
 	return ret;
+}
+
+CmdID getRcBuf(void)
+{
+
+	/* Place RC5 event to command buffer if enough RC5 timer ticks */
+	IRData ir = takeIrData();
+
+	CmdID rcCmdBuf = CMD_END;
+
+	if (ir.ready && (ir.type == rcType && ir.address == rcAddr)) {
+		if (!ir.repeat || (rcTimer > RC_LONG_PRESS)) {
+			rcTimer = 0;
+			rcCmdBuf = rcCmdIndex(ir.command);
+		}
+		if (ir.command == rcCode[CMD_RC_VOL_UP] || ir.command == rcCode[CMD_RC_VOL_DOWN]) {
+			if (rcTimer > RC_VOL_REPEAT) {
+				rcTimer = RC_VOL_DELAY;
+				rcCmdBuf = rcCmdIndex(ir.command);
+			}
+		}
+	}
+
+	return rcCmdBuf;
 }
 
 void setDisplayTime(uint16_t value)

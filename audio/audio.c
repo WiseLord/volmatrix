@@ -1,9 +1,8 @@
 #include "audio.h"
 
-#include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #include "../eeprom.h"
-#include "../display.h"
 #include "../pins.h"
 
 #ifdef _TDA7439
@@ -59,16 +58,9 @@ void sndInit(void)
 {
 	uint8_t i;
 
-#ifndef _NO_TXT_LABELS
-	uint8_t **txtLabels = getTxtLabels();
-
 	/* Load audio parameters stored in eeprom */
-	for (i = 0; i < MODE_SND_END; i++) {
+	for (i = 0; i < MODE_SND_END; i++)
 		sndPar[i].value = eeprom_read_byte((uint8_t*)EEPROM_VOLUME + i);
-		sndPar[i].label = txtLabels[MODE_SND_VOLUME + i];
-	}
-#endif
-
 	eeprom_read_block(&aproc, (void*)EEPROM_AUDIOPROC, sizeof(Audioproc_type) - 1);
 
 #if   !defined(_TDA7439) && !defined(_TDA731X) && !defined(_TDA7448) && !defined(_PT232X) && !defined(_TEA63X0) && !defined(_PGA2310) && !defined(_RDA580X_AUDIO)
@@ -104,20 +96,6 @@ void sndInit(void)
 		sndPar[i].grid = &grid_0_0_0;
 		sndPar[i].set = setNothing;
 	}
-
-#ifndef KS0066
-	uint8_t ic;
-
-	/* Setup icons */
-	for (i = 0; i < MODE_SND_END; i++)
-		sndPar[i].icon = i;
-	/* Update input icons */
-	for (i = 0; i < MODE_SND_END - MODE_SND_GAIN0; i++) {
-		ic = eeprom_read_byte((uint8_t*)(EEPROM_INPUT_ICONS + i));
-		if (ic < ICON24_END)
-			sndPar[MODE_SND_GAIN0 + i].icon = ic;
-	}
-#endif
 
 	// Setup inputs
 	static uint8_t inCnt;
@@ -436,27 +414,18 @@ void sndSetMute(uint8_t value)
 	return;
 }
 
-void sndSetLoudness(uint8_t value)
+void sndSetExtra(void)
 {
 #ifdef _TDA731X
-	aproc.loudness = value;
 	if (aproc.ic == AUDIOPROC_TDA7313 || aproc.ic == AUDIOPROC_TDA7314 ||
 			aproc.ic == AUDIOPROC_TDA7315 || aproc.ic == AUDIOPROC_PT2314)
 		tda731xSetInput();
 #endif
 #ifdef _RDA580X_AUDIO
-	aproc.loudness = value;
 	if (aproc.ic == AUDIOPROC_RDA580X)
 		rda580xAudioBass();
 #endif
-
-	return;
-}
-
-void sndSetSurround(uint8_t value)
-{
 #ifdef _PT232X
-	aproc.surround = value;
 	if (aproc.ic == AUDIOPROC_PT232X)
 		pt232xSetSndFunc();
 #endif
@@ -464,24 +433,11 @@ void sndSetSurround(uint8_t value)
 	return;
 }
 
-void sndSetEffect3d(uint8_t value)
+void sndSwitchExtra(uint8_t extra)
 {
-#ifdef _PT232X
-	aproc.effect3d = value;
-	if (aproc.ic == AUDIOPROC_PT232X)
-		pt232xSetSndFunc();
-#endif
+	aproc.extra ^= extra;
 
-	return;
-}
-
-void sndSetToneDefeat(uint8_t value)
-{
-#ifdef _PT232X
-	aproc.toneDefeat = value;
-	if (aproc.ic == AUDIOPROC_PT232X)
-		pt232xSetSndFunc();
-#endif
+	sndSetExtra();
 
 	return;
 }
@@ -523,10 +479,7 @@ void sndPowerOn(void)
 	sndSetMute(1);
 	sndSetInput(aproc.input);
 
-	sndSetLoudness(aproc.loudness);
-	sndSetSurround(aproc.surround);
-	sndSetEffect3d(aproc.effect3d);
-	sndSetToneDefeat(aproc.toneDefeat);
+	sndSetExtra();
 
 	for (i = MODE_SND_GAIN0 - 1; i >= MODE_SND_VOLUME; i--)
 		sndPar[i].set();
@@ -543,10 +496,7 @@ void sndPowerOff(void)
 	for (i = 0; i < MODE_SND_END; i++)
 		eeprom_update_byte((uint8_t*)EEPROM_VOLUME + i, sndPar[i].value);
 
-	eeprom_update_byte((uint8_t*)EEPROM_LOUDNESS, aproc.loudness);
-	eeprom_update_byte((uint8_t*)EEPROM_SURROUND, aproc.surround);
-	eeprom_update_byte((uint8_t*)EEPROM_EFFECT3D, aproc.effect3d);
-	eeprom_update_byte((uint8_t*)EEPROM_TONE_DEFEAT, aproc.toneDefeat);
+	eeprom_update_byte((uint8_t*)EEPROM_APROC_EXTRA, aproc.extra);
 	eeprom_update_byte((uint8_t*)EEPROM_INPUT, aproc.input);
 
 	return;
