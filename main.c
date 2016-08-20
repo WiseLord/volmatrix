@@ -141,6 +141,7 @@ int main(void)
 				break;
 			case MODE_MUTE:
 			case MODE_LOUDNESS:
+			case MODE_TIME:
 				dispMode = MODE_SND_VOLUME;
 			default:
 				sndSetMute(0);
@@ -158,7 +159,7 @@ int main(void)
 				if (aproc.mute)
 					dispMode = MODE_MUTE;
 				else
-					dispMode = MODE_SND_VOLUME;
+					dispMode = MODE_TIME;
 			}
 		}
 
@@ -175,6 +176,9 @@ int main(void)
 			break;
 		case MODE_LEARN:
 			showLearn();
+			break;
+		case MODE_TIME:
+			showTime();
 			break;
 		default:
 			showSndParam(dispMode, ICON_NATIVE);

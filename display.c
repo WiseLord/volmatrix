@@ -9,6 +9,8 @@
 #include "remote.h"
 #include "eeprom.h"
 
+#include "rtc.h"
+
 static uint8_t pos;									/* Current position in framebuffer */
 
 static uint8_t scrBuf[ROWS];						/* Screen buffer */
@@ -19,6 +21,7 @@ static volatile int8_t encCnt;
 static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
 static volatile uint16_t displayTime;
+static volatile uint16_t rtcTimer;
 static volatile uint16_t rcTimer;
 
 static uint8_t rcType;
@@ -319,6 +322,10 @@ ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
 	if (displayTime)
 		displayTime--;
 
+	/* RTC poll timer */
+	if (rtcTimer)
+		rtcTimer--;
+
 	/* Time from last IR command */
 	if (rcTimer < RC_PRESS_LIMIT)
 		rcTimer++;
@@ -390,6 +397,8 @@ void showSndParam(sndMode mode, uint8_t icon)
 	int8_t min = pgm_read_byte(&param->grid->min);
 	int8_t max = pgm_read_byte(&param->grid->max);
 
+	matrixFill(0x00);
+
 	if (icon == ICON_NATIVE)
 		showIcon(mode);
 
@@ -431,6 +440,32 @@ void showStby(void)
 {
 	matrixFill(0x00);
 	rcIndex = 0;
+
+	return;
+}
+
+void showTime(void)
+{
+	uint8_t i;
+
+	if (getRtcTimer() == 0) {
+		rtcReadTime();
+		setRtcTimer(TIMEOUT_RTC);
+	}
+
+	matrixFill(0x00);
+
+	matrixSetPos(0);
+	matrixShowHex(rtcDecToBinDec(rtc.hour), 1);
+
+	matrixSetPos(9);
+	matrixShowHex(rtcDecToBinDec(rtc.min), 1);
+
+	for (i = 0; i < rtc.sec / 10; i++)
+		newBuf[i] |= 0xC0;
+
+	for (i = 0; i < rtc.sec % 10; i++)
+		newBuf[i + 7] |= 0xC0;
 
 	return;
 }
@@ -558,4 +593,16 @@ void setDisplayTime(uint16_t value)
 uint16_t getDisplayTime(void)
 {
 	return displayTime / POLL_FREQ;
+}
+
+void setRtcTimer(uint16_t value)
+{
+	rtcTimer = POLL_FREQ * value;
+
+	return;
+}
+
+uint16_t getRtcTimer()
+{
+	return rtcTimer / POLL_FREQ;
 }
