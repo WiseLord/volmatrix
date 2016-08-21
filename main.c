@@ -16,7 +16,7 @@ static void powerOn(void)
 {
 	sndPowerOn();
 	dispMode = MODE_SND_VOLUME;
-	setDisplayTime(TIMEOUT_AUDIO);
+	displayTime = TIMEOUT_AUDIO;
 }
 
 static void powerOff(void)
@@ -24,7 +24,7 @@ static void powerOff(void)
 	sndSetMute(1);
 	sndPowerOff();
 	dispMode = MODE_STANDBY;
-	setDisplayTime(TIMEOUT_STBY);
+	displayTime = TIMEOUT_STBY;
 }
 
 int main(void)
@@ -59,7 +59,7 @@ int main(void)
 		/* Don't handle buttons in learn mode except some */
 		if (dispMode == MODE_LEARN) {
 			if (encCnt || cmd != CMD_END)
-				setDisplayTime(TIMEOUT_LEARN);
+				displayTime = TIMEOUT_LEARN;
 			if (cmd != CMD_BTN_1_LONG && cmd != CMD_BTN_3)
 				cmd = CMD_END;
 		}
@@ -87,7 +87,7 @@ int main(void)
 					rtc.etm = RTC_HOUR;
 					break;
 				}
-				setDisplayTime(TIMEOUT_TIME_EDIT);
+				displayTime = TIMEOUT_TIME_EDIT;
 			} else {
 				if (aproc.mute) {
 					sndSetMute(0);
@@ -96,7 +96,7 @@ int main(void)
 					sndSetMute(1);
 					dispMode = MODE_MUTE;
 				}
-				setDisplayTime(TIMEOUT_AUDIO);
+				displayTime = TIMEOUT_AUDIO;
 			}
 			break;
 		case CMD_RC_MENU:
@@ -105,7 +105,7 @@ int main(void)
 				nextRcCmd();
 			} else {
 				sndNextParam(&dispMode);
-				setDisplayTime(TIMEOUT_AUDIO);
+				displayTime = TIMEOUT_AUDIO;
 			}
 			break;
 		case CMD_RC_RED:
@@ -114,7 +114,7 @@ int main(void)
 		case CMD_RC_BLUE:
 			sndSetInput(cmd - CMD_RC_RED);
 			dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
-			setDisplayTime(TIMEOUT_AUDIO);
+			displayTime = TIMEOUT_AUDIO;
 			break;
 		case CMD_BTN_1_LONG:
 			if (dispMode == MODE_LEARN)
@@ -129,7 +129,7 @@ int main(void)
 			default:
 				dispMode = MODE_TIME_EDIT;
 				rtc.etm = RTC_HOUR;
-				setDisplayTime(TIMEOUT_TIME_EDIT);
+				displayTime = TIMEOUT_TIME_EDIT;
 				break;
 			}
 			break;
@@ -139,13 +139,13 @@ int main(void)
 				aproc.input++;
 			sndSetInput(aproc.input);
 			dispMode = MODE_SND_GAIN0 + aproc.input;
-			setDisplayTime(TIMEOUT_AUDIO);
+			displayTime = TIMEOUT_AUDIO;
 			break;
 		case CMD_BTN_1_2_LONG:
 			if (dispMode == MODE_STANDBY)
 				dispMode = MODE_LEARN;
 			switchTestMode(CMD_RC_STBY);
-			setDisplayTime(TIMEOUT_LEARN);
+			displayTime = TIMEOUT_LEARN;
 			break;
 		}
 
@@ -162,7 +162,7 @@ int main(void)
 			case MODE_LEARN:
 				break;
 			case MODE_TIME_EDIT:
-				setDisplayTime(TIMEOUT_TIME_EDIT);
+				displayTime = TIMEOUT_TIME_EDIT;
 				rtcChangeTime(encCnt);
 				break;
 			case MODE_MUTE:
@@ -172,13 +172,13 @@ int main(void)
 			default:
 				sndSetMute(0);
 				sndChangeParam(dispMode, encCnt);
-				setDisplayTime(TIMEOUT_AUDIO);
+				displayTime = TIMEOUT_AUDIO;
 				break;
 			}
 		}
 
 		/* Exid to default mode if timer expired */
-		if (getDisplayTime() == 0) {
+		if (displayTime == 0) {
 			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
 				dispMode = MODE_STANDBY;
 			} else {

@@ -20,7 +20,8 @@ static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
 static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
-static volatile uint16_t displayTime;
+uint16_t displayTime;
+
 static volatile uint16_t rtcTimer;
 static volatile uint16_t rcTimer;
 
@@ -449,9 +450,9 @@ void showTime(void)
 	uint8_t i;
 	uint8_t blink;
 
-	if (getRtcTimer() == 0) {
+	if (rtcTimer == 0) {
 		rtcReadTime();
-		setRtcTimer(TIMEOUT_RTC);
+		rtcTimer = TIMEOUT_RTC;
 	}
 
 	blink = (rtcTimer & 0x0400) ? 1 : 0;
@@ -589,28 +590,4 @@ CmdID getRcBuf(void)
 	}
 
 	return rcCmdBuf;
-}
-
-void setDisplayTime(uint16_t value)
-{
-	displayTime = POLL_FREQ * value;
-
-	return;
-}
-
-uint16_t getDisplayTime(void)
-{
-	return displayTime / POLL_FREQ;
-}
-
-void setRtcTimer(uint16_t value)
-{
-	rtcTimer = POLL_FREQ * value;
-
-	return;
-}
-
-uint16_t getRtcTimer()
-{
-	return rtcTimer / POLL_FREQ;
 }
