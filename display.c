@@ -20,7 +20,8 @@ static volatile uint8_t cmdBuf;
 static volatile int8_t encCnt;
 static volatile uint8_t stateBtnEnc;				/* Buttons and encoder raw state */
 
-static volatile uint16_t displayTime;
+uint16_t displayTime;
+
 static volatile uint16_t rtcTimer;
 static volatile uint16_t rcTimer;
 
@@ -28,6 +29,9 @@ static uint8_t rcType;
 static uint8_t rcAddr;
 static uint8_t rcCode[CMD_RC_END];					/* Array with RC commands */
 static uint8_t rcIndex = 0;							/* Index of RC command being learned */
+
+static int8_t brStby;								/* Brightness in standby mode */
+static int8_t brWork;								/* Brightness in working mode */
 
 static const uint8_t font_dig_3x5[] PROGMEM = {
 	0x00, 0x00, 0x00, // space
@@ -182,7 +186,8 @@ static void rcCodesInit(void)
 	return;
 }
 
-ISR (TIMER2_COMP_vect) {
+static void dispUpdate(void)
+{
 	static uint8_t row;								/* Current row being scanned */
 
 	row <<= 1;
@@ -193,10 +198,6 @@ ISR (TIMER2_COMP_vect) {
 		PORT(REG_DATA) |= REG_DATA_LINE;
 	else
 		PORT(REG_DATA) &= ~REG_DATA_LINE;
-
-	PORT(ROW_08_06_04_02) &= ~ROW_08_06_04_02_LINE;
-	PORT(ROW_16_15_13_12) &= ~ROW_16_15_13_12_LINE;
-	PORT(ROW_14_11_10_09_07_05_03_01) &= ~ROW_14_11_10_09_07_05_03_01_LINE;
 
 	// Strob 250ns on F_CPU 8MHz
 	PORT(REG_CLK) |= REG_CLK_LINE;
@@ -235,9 +236,20 @@ ISR (TIMER2_COMP_vect) {
 	return;
 }
 
-ISR (TIMER0_OVF_vect, ISR_NOBLOCK)
+ISR (TIMER2_COMP_vect)
 {
-	// 8000000/256/8 = 3906 polls/sec
+	// Switch off current line
+
+	PORT(ROW_08_06_04_02) &= ~ROW_08_06_04_02_LINE;
+	PORT(ROW_16_15_13_12) &= ~ROW_16_15_13_12_LINE;
+	PORT(ROW_14_11_10_09_07_05_03_01) &= ~ROW_14_11_10_09_07_05_03_01_LINE;
+
+	return;
+}
+
+ISR (TIMER2_OVF_vect)
+{
+	dispUpdate();
 
 	uint8_t btnNow;
 	static uint8_t btnPrev = BTN_STATE_0;
@@ -340,7 +352,7 @@ static void showIcon(uint8_t icon)
 
 	if (ic >= MODE_SND_GAIN0 && ic < MODE_SND_END)
 		ic = eeprom_read_byte((uint8_t*)(EEPROM_INPUT_ICONS + (ic - MODE_SND_GAIN0)));
-	if (ic < ICON24_END)
+	if (ic < ICON_END)
 		icon = ic;
 
 	const uint8_t *icPtr = &icons[5 * icon];
@@ -364,18 +376,16 @@ void matrixInit(void)
 	DDR(REG_DATA) |= REG_DATA_LINE;
 	DDR(REG_CLK) |= REG_CLK_LINE;
 
-	TIMSK |= (1<<TOIE0);							/* Enable timer overflow interrupt */
-	TCCR0 |= (0<<CS02) | (1<<CS01) | (0 <<CS00);	/* Set timer prescaller to 1 */
-
-	TIMSK |= (1<<OCIE2);							/* Enable timer overflow interrupt */
-	TCCR2 |= (0<<CS22) | (1<<CS21) | (0 <<CS20);	/* Set timer prescaller to 8 */
-	TCCR2 |= (1 << WGM21);							/* Clear timer on compare match */
-	OCR2 = 31;
+	TIMSK |= (1<<OCIE2) | (1<<TOIE2);				/* Enable timer 2 overflow and compare match interrups */
+	TCCR2 |= (0<<CS22) | (1<<CS21) | (0 <<CS20);	/* Set timer prescaller to 8 (8000000/8/256 = 3906 polls/sec)*/
 
 	cmdBuf = CMD_END;
 	encCnt = 0;
 
 	rcCodesInit();
+
+	brStby = eeprom_read_byte((uint8_t*)EEPROM_BR_STBY);
+	brWork = eeprom_read_byte((uint8_t*)EEPROM_BR_WORK);
 
 	return;
 }
@@ -388,6 +398,14 @@ void matrixFill(uint8_t data)
 		newBuf[i] = data;
 
 	return;
+}
+
+void matrixSetBr(uint8_t value)
+{
+	if (value > DISP_MAX_BR)
+		value = DISP_MAX_BR;
+
+	OCR2 = 48 + value * 12;
 }
 
 void showSndParam(sndMode mode, uint8_t icon)
@@ -438,8 +456,9 @@ void showLoudness(void)
 
 void showStby(void)
 {
-	matrixFill(0x00);
 	rcIndex = 0;
+	rtc.etm = RTC_NOEDIT;
+	showTime();
 
 	return;
 }
@@ -447,25 +466,33 @@ void showStby(void)
 void showTime(void)
 {
 	uint8_t i;
+	uint8_t blink;
 
-	if (getRtcTimer() == 0) {
+	if (rtcTimer == 0) {
 		rtcReadTime();
-		setRtcTimer(TIMEOUT_RTC);
+		rtcTimer = TIMEOUT_RTC;
 	}
+
+	blink = (rtcTimer & 0x0200) ? 1 : 0;
 
 	matrixFill(0x00);
 
-	matrixSetPos(0);
-	matrixShowHex(rtcDecToBinDec(rtc.hour), 1);
+	if (rtc.etm != RTC_HOUR || blink) {
+		matrixSetPos(0);
+		matrixShowHex(rtcDecToBinDec(rtc.hour), 1);
+	}
 
-	matrixSetPos(9);
-	matrixShowHex(rtcDecToBinDec(rtc.min), 1);
+	if (rtc.etm != RTC_MIN || blink) {
+		matrixSetPos(9);
+		matrixShowHex(rtcDecToBinDec(rtc.min), 1);
+	}
 
-	for (i = 0; i < rtc.sec / 10; i++)
-		newBuf[i] |= 0xC0;
-
-	for (i = 0; i < rtc.sec % 10; i++)
-		newBuf[i + 7] |= 0xC0;
+	if (rtc.etm != RTC_SEC || blink) {
+		for (i = 0; i < rtc.sec / 10; i++)
+			newBuf[i] |= 0xC0;
+		for (i = 0; i < rtc.sec % 10; i++)
+			newBuf[i + 7] |= 0xC0;
+	}
 
 	return;
 }
@@ -515,12 +542,13 @@ void switchTestMode(uint8_t index)
 	return;
 }
 
-void updateScreen(uint8_t effect)
+void updateScreen(uint8_t effect, uint8_t dispMode)
 {
 	uint8_t i;
 
 	switch (effect) {
 	case EFFECT_NONE:
+		matrixSetBr(dispMode == MODE_STANDBY ? brStby : brWork);
 		for (i = 0; i < ROWS; i++)
 			scrBuf[i] = newBuf[i];
 		break;
@@ -528,10 +556,11 @@ void updateScreen(uint8_t effect)
 		for (i = 0; i < ROWS / 2; i++) {
 			scrBuf[i] = 0x00;
 			scrBuf[ROWS - 1 - i] = 0x00;
-			_delay_ms(5);
+			_delay_ms(20);
 		}
+		matrixSetBr(dispMode == MODE_STANDBY ? brStby : brWork);
 		for (i = ROWS / 2; i < ROWS; i++) {
-			_delay_ms(5);
+			_delay_ms(20);
 			scrBuf[i] = newBuf[i];
 			scrBuf[ROWS - 1 - i] = newBuf[ROWS - 1 - i];
 		}
@@ -583,26 +612,28 @@ CmdID getRcBuf(void)
 	return rcCmdBuf;
 }
 
-void setDisplayTime(uint16_t value)
+void showBrWork()
 {
-	displayTime = POLL_FREQ * value;
+	matrixFill(0x00);
+
+	matrixSetPos(5);
+	matrixShowDecimal(brWork);
+
+	showIcon(ICON_BR);
+
+	matrixShowBar(brWork);
+}
+
+void changeBrWork(int8_t diff)
+{
+	brWork += diff;
+	if (brWork > DISP_MAX_BR)
+		brWork = DISP_MAX_BR;
+	if (brWork < DISP_MIN_BR)
+		brWork = DISP_MIN_BR;
+	matrixSetBr(brWork);
+
+	eeprom_update_byte((uint8_t*)EEPROM_BR_WORK, brWork);
 
 	return;
-}
-
-uint16_t getDisplayTime(void)
-{
-	return displayTime / POLL_FREQ;
-}
-
-void setRtcTimer(uint16_t value)
-{
-	rtcTimer = POLL_FREQ * value;
-
-	return;
-}
-
-uint16_t getRtcTimer()
-{
-	return rtcTimer / POLL_FREQ;
 }

@@ -53,7 +53,11 @@ enum {
 	MODE_LOUDNESS,
 
 	MODE_LEARN,
+
 	MODE_TIME,
+	MODE_TIME_EDIT,
+
+	MODE_BRIGHTNESS,
 
 	MODE_END
 };
@@ -77,14 +81,17 @@ enum {
 	SYM_NUMBERS
 };
 
-#define TIMEOUT_AUDIO		2000
-#define TIMEOUT_STBY		1000
-#define TIMEOUT_LEARN		10000
-
-#define TIMEOUT_RTC			976
-
 /* Buttons poll frequency, kHz */
 #define POLL_FREQ			4
+
+#define TIMEOUT_AUDIO		(2000U * POLL_FREQ)
+#define TIMEOUT_STBY		(1000U * POLL_FREQ)
+#define TIMEOUT_LEARN		(10000U * POLL_FREQ)
+#define TIMEOUT_BR			(3000U * POLL_FREQ)
+
+#define TIMEOUT_TIME_EDIT	(10000U * POLL_FREQ)
+
+#define TIMEOUT_RTC			976
 
 /* Button press durations, time(ms) * POLL_FREQ */
 #define SHORT_PRESS			(100 * POLL_FREQ)
@@ -95,29 +102,32 @@ enum {
 #define RC_VOL_REPEAT		(400 * POLL_FREQ)
 #define RC_PRESS_LIMIT		(1000 * POLL_FREQ)
 
+#define DISP_MIN_BR			0
+#define DISP_MAX_BR			16
+
+extern uint16_t displayTime;
+
 void matrixInit(void);
 void matrixFill(uint8_t data);
+void matrixSetBr(uint8_t value);
 
 void showSndParam(sndMode mode, uint8_t icon);
 void showMute(void);
 void showLoudness(void);
 void showStby(void);
 void showTime(void);
+void showBrWork(void);
+
+void changeBrWork(int8_t diff);
 
 void showLearn(void);
 void nextRcCmd(void);
 void switchTestMode(uint8_t index);
 
-void updateScreen(uint8_t effect);
+void updateScreen(uint8_t effect, uint8_t dispMode);
 
 int8_t getEncoder(void);
 CmdID getCmdBuf(void);
 CmdID getRcBuf(void);
-
-void setDisplayTime(uint16_t value);
-uint16_t getDisplayTime(void);
-
-void setRtcTimer(uint16_t value);
-uint16_t getRtcTimer(void);
 
 #endif /* MATRIX_H */

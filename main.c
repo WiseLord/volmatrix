@@ -3,7 +3,9 @@
 
 #include "display.h"
 #include "audio/audio.h"
+
 #include "remote.h"
+#include "rtc.h"
 
 #define STBY_ON						1
 #define STBY_OFF					0
@@ -14,7 +16,7 @@ static void powerOn(void)
 {
 	sndPowerOn();
 	dispMode = MODE_SND_VOLUME;
-	setDisplayTime(TIMEOUT_AUDIO);
+	displayTime = TIMEOUT_AUDIO;
 }
 
 static void powerOff(void)
@@ -22,11 +24,16 @@ static void powerOff(void)
 	sndSetMute(1);
 	sndPowerOff();
 	dispMode = MODE_STANDBY;
-	setDisplayTime(TIMEOUT_STBY);
+	displayTime = TIMEOUT_STBY;
 }
 
 int main(void)
 {
+	int8_t encCnt = 0;
+	uint8_t cmd = CMD_END;
+
+	static uint8_t dispPrev = MODE_STANDBY;
+
 	rcInit();
 	sndInit();
 	matrixInit();
@@ -34,11 +41,6 @@ int main(void)
 
 	_delay_ms(100);
 	powerOff();
-	sndInit();
-
-	int8_t encCnt = 0;
-	uint8_t cmd = CMD_END;
-	static uint8_t dispPrev = MODE_STANDBY;
 
 	while(1) {
 		encCnt = getEncoder();
@@ -57,7 +59,7 @@ int main(void)
 		/* Don't handle buttons in learn mode except some */
 		if (dispMode == MODE_LEARN) {
 			if (encCnt || cmd != CMD_END)
-				setDisplayTime(TIMEOUT_LEARN);
+				displayTime = TIMEOUT_LEARN;
 			if (cmd != CMD_BTN_1_LONG && cmd != CMD_BTN_3)
 				cmd = CMD_END;
 		}
@@ -73,14 +75,29 @@ int main(void)
 			break;
 		case CMD_RC_MUTE:
 		case CMD_BTN_2:
-			if (aproc.mute) {
-				sndSetMute(0);
-				dispMode = MODE_SND_VOLUME;
+			if (dispMode == MODE_TIME_EDIT) {
+				switch (rtc.etm) {
+				case RTC_HOUR:
+					rtc.etm = RTC_MIN;
+					break;
+				case RTC_MIN:
+					rtc.etm = RTC_SEC;
+					break;
+				default:
+					rtc.etm = RTC_HOUR;
+					break;
+				}
+				displayTime = TIMEOUT_TIME_EDIT;
 			} else {
-				sndSetMute(1);
-				dispMode = MODE_MUTE;
+				if (aproc.mute) {
+					sndSetMute(0);
+					dispMode = MODE_SND_VOLUME;
+				} else {
+					sndSetMute(1);
+					dispMode = MODE_MUTE;
+				}
+				displayTime = TIMEOUT_AUDIO;
 			}
-			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_MENU:
 		case CMD_BTN_3:
@@ -88,7 +105,7 @@ int main(void)
 				nextRcCmd();
 			} else {
 				sndNextParam(&dispMode);
-				setDisplayTime(TIMEOUT_AUDIO);
+				displayTime = TIMEOUT_AUDIO;
 			}
 			break;
 		case CMD_RC_RED:
@@ -97,19 +114,32 @@ int main(void)
 		case CMD_RC_BLUE:
 			sndSetInput(cmd - CMD_RC_RED);
 			dispMode = MODE_SND_GAIN0 + (cmd - CMD_RC_RED);
-			setDisplayTime(TIMEOUT_AUDIO);
+			displayTime = TIMEOUT_AUDIO;
 			break;
 		case CMD_BTN_1_LONG:
-			if (dispMode == MODE_LEARN)
+			switch (dispMode) {
+			case MODE_STANDBY:
+			case MODE_LEARN:
 				powerOff();
+				break;
+			default:
+				dispMode = MODE_BRIGHTNESS;
+				displayTime = TIMEOUT_BR;
+				break;
+			}
 			break;
 		case CMD_BTN_2_LONG:
-			sndSwitchExtra(APROC_EXTRA_LOUDNESS);
-			if (aproc.extra & APROC_EXTRA_LOUDNESS)
-				dispMode = MODE_LOUDNESS;
-			else
-				dispMode = MODE_SND_VOLUME;
-			setDisplayTime(TIMEOUT_AUDIO);
+			switch (dispMode) {
+			case MODE_TIME_EDIT:
+				dispMode = MODE_TIME;
+				rtc.etm = RTC_NOEDIT;
+				break;
+			default:
+				dispMode = MODE_TIME_EDIT;
+				rtc.etm = RTC_HOUR;
+				displayTime = TIMEOUT_TIME_EDIT;
+				break;
+			}
 			break;
 		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:
@@ -117,13 +147,13 @@ int main(void)
 				aproc.input++;
 			sndSetInput(aproc.input);
 			dispMode = MODE_SND_GAIN0 + aproc.input;
-			setDisplayTime(TIMEOUT_AUDIO);
+			displayTime = TIMEOUT_AUDIO;
 			break;
 		case CMD_BTN_1_2_LONG:
 			if (dispMode == MODE_STANDBY)
 				dispMode = MODE_LEARN;
 			switchTestMode(CMD_RC_STBY);
-			setDisplayTime(TIMEOUT_LEARN);
+			displayTime = TIMEOUT_LEARN;
 			break;
 		}
 
@@ -139,6 +169,14 @@ int main(void)
 			case MODE_STANDBY:
 			case MODE_LEARN:
 				break;
+			case MODE_TIME_EDIT:
+				displayTime = TIMEOUT_TIME_EDIT;
+				rtcChangeTime(encCnt);
+				break;
+			case MODE_BRIGHTNESS:
+				changeBrWork(encCnt);
+				displayTime = TIMEOUT_BR;
+				break;
 			case MODE_MUTE:
 			case MODE_LOUDNESS:
 			case MODE_TIME:
@@ -146,16 +184,17 @@ int main(void)
 			default:
 				sndSetMute(0);
 				sndChangeParam(dispMode, encCnt);
-				setDisplayTime(TIMEOUT_AUDIO);
+				displayTime = TIMEOUT_AUDIO;
 				break;
 			}
 		}
 
 		/* Exid to default mode if timer expired */
-		if (getDisplayTime() == 0) {
+		if (displayTime == 0) {
 			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
 				dispMode = MODE_STANDBY;
 			} else {
+				rtc.etm = RTC_NOEDIT;
 				if (aproc.mute)
 					dispMode = MODE_MUTE;
 				else
@@ -178,7 +217,11 @@ int main(void)
 			showLearn();
 			break;
 		case MODE_TIME:
+		case MODE_TIME_EDIT:
 			showTime();
+			break;
+		case MODE_BRIGHTNESS:
+			showBrWork();
 			break;
 		default:
 			showSndParam(dispMode, ICON_NATIVE);
@@ -186,9 +229,9 @@ int main(void)
 		}
 
 		if (dispMode == dispPrev)
-			updateScreen(EFFECT_NONE);
+			updateScreen(EFFECT_NONE, dispMode);
 		else
-			updateScreen(EFFECT_SPLASH);
+			updateScreen(EFFECT_SPLASH, dispMode);
 
 		dispPrev = dispMode;
 	}
