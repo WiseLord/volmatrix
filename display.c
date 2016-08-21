@@ -447,25 +447,33 @@ void showStby(void)
 void showTime(void)
 {
 	uint8_t i;
+	uint8_t blink;
 
 	if (getRtcTimer() == 0) {
 		rtcReadTime();
 		setRtcTimer(TIMEOUT_RTC);
 	}
 
+	blink = (rtcTimer & 0x0400) ? 1 : 0;
+
 	matrixFill(0x00);
 
-	matrixSetPos(0);
-	matrixShowHex(rtcDecToBinDec(rtc.hour), 1);
+	if (rtc.etm != RTC_HOUR || blink) {
+		matrixSetPos(0);
+		matrixShowHex(rtcDecToBinDec(rtc.hour), 1);
+	}
 
-	matrixSetPos(9);
-	matrixShowHex(rtcDecToBinDec(rtc.min), 1);
+	if (rtc.etm != RTC_MIN || blink) {
+		matrixSetPos(9);
+		matrixShowHex(rtcDecToBinDec(rtc.min), 1);
+	}
 
-	for (i = 0; i < rtc.sec / 10; i++)
-		newBuf[i] |= 0xC0;
-
-	for (i = 0; i < rtc.sec % 10; i++)
-		newBuf[i + 7] |= 0xC0;
+	if (rtc.etm != RTC_SEC || blink) {
+		for (i = 0; i < rtc.sec / 10; i++)
+			newBuf[i] |= 0xC0;
+		for (i = 0; i < rtc.sec % 10; i++)
+			newBuf[i + 7] |= 0xC0;
+	}
 
 	return;
 }

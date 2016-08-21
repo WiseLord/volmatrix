@@ -53,7 +53,9 @@ enum {
 	MODE_LOUDNESS,
 
 	MODE_LEARN,
+
 	MODE_TIME,
+	MODE_TIME_EDIT,
 
 	MODE_END
 };
@@ -80,6 +82,8 @@ enum {
 #define TIMEOUT_AUDIO		2000
 #define TIMEOUT_STBY		1000
 #define TIMEOUT_LEARN		10000
+
+#define TIMEOUT_TIME_EDIT	10000
 
 #define TIMEOUT_RTC			976
 

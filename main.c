@@ -3,7 +3,9 @@
 
 #include "display.h"
 #include "audio/audio.h"
+
 #include "remote.h"
+#include "rtc.h"
 
 #define STBY_ON						1
 #define STBY_OFF					0
@@ -73,14 +75,29 @@ int main(void)
 			break;
 		case CMD_RC_MUTE:
 		case CMD_BTN_2:
-			if (aproc.mute) {
-				sndSetMute(0);
-				dispMode = MODE_SND_VOLUME;
+			if (dispMode == MODE_TIME_EDIT) {
+				switch (rtc.etm) {
+				case RTC_HOUR:
+					rtc.etm = RTC_MIN;
+					break;
+				case RTC_MIN:
+					rtc.etm = RTC_SEC;
+					break;
+				default:
+					rtc.etm = RTC_HOUR;
+					break;
+				}
+				setDisplayTime(TIMEOUT_TIME_EDIT);
 			} else {
-				sndSetMute(1);
-				dispMode = MODE_MUTE;
+				if (aproc.mute) {
+					sndSetMute(0);
+					dispMode = MODE_SND_VOLUME;
+				} else {
+					sndSetMute(1);
+					dispMode = MODE_MUTE;
+				}
+				setDisplayTime(TIMEOUT_AUDIO);
 			}
-			setDisplayTime(TIMEOUT_AUDIO);
 			break;
 		case CMD_RC_MENU:
 		case CMD_BTN_3:
@@ -104,12 +121,17 @@ int main(void)
 				powerOff();
 			break;
 		case CMD_BTN_2_LONG:
-			sndSwitchExtra(APROC_EXTRA_LOUDNESS);
-			if (aproc.extra & APROC_EXTRA_LOUDNESS)
-				dispMode = MODE_LOUDNESS;
-			else
-				dispMode = MODE_SND_VOLUME;
-			setDisplayTime(TIMEOUT_AUDIO);
+			switch (dispMode) {
+			case MODE_TIME_EDIT:
+				dispMode = MODE_TIME;
+				rtc.etm = RTC_NOEDIT;
+				break;
+			default:
+				dispMode = MODE_TIME_EDIT;
+				rtc.etm = RTC_HOUR;
+				setDisplayTime(TIMEOUT_TIME_EDIT);
+				break;
+			}
 			break;
 		case CMD_RC_NEXT:
 		case CMD_BTN_3_LONG:
@@ -139,6 +161,10 @@ int main(void)
 			case MODE_STANDBY:
 			case MODE_LEARN:
 				break;
+			case MODE_TIME_EDIT:
+				setDisplayTime(TIMEOUT_TIME_EDIT);
+				rtcChangeTime(encCnt);
+				break;
 			case MODE_MUTE:
 			case MODE_LOUDNESS:
 			case MODE_TIME:
@@ -156,6 +182,7 @@ int main(void)
 			if (dispMode == MODE_LEARN || dispMode == MODE_STANDBY) {
 				dispMode = MODE_STANDBY;
 			} else {
+				rtc.etm = RTC_NOEDIT;
 				if (aproc.mute)
 					dispMode = MODE_MUTE;
 				else
@@ -178,6 +205,7 @@ int main(void)
 			showLearn();
 			break;
 		case MODE_TIME:
+		case MODE_TIME_EDIT:
 			showTime();
 			break;
 		default:
