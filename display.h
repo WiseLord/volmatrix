@@ -53,6 +53,7 @@ enum {
 	MODE_LOUDNESS,
 
 	MODE_LEARN,
+	MODE_TIME,
 
 	MODE_END
 };
@@ -80,6 +81,8 @@ enum {
 #define TIMEOUT_STBY		1000
 #define TIMEOUT_LEARN		10000
 
+#define TIMEOUT_RTC			976
+
 /* Buttons poll frequency, kHz */
 #define POLL_FREQ			4
 
@@ -99,6 +102,7 @@ void showSndParam(sndMode mode, uint8_t icon);
 void showMute(void);
 void showLoudness(void);
 void showStby(void);
+void showTime(void);
 
 void showLearn(void);
 void nextRcCmd(void);
@@ -112,5 +116,8 @@ CmdID getRcBuf(void);
 
 void setDisplayTime(uint16_t value);
 uint16_t getDisplayTime(void);
+
+void setRtcTimer(uint16_t value);
+uint16_t getRtcTimer(void);
 
 #endif /* MATRIX_H */
