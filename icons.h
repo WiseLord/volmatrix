@@ -22,10 +22,10 @@ enum {
 	ICON_MUTE,
 	ICON_LOUDNESS,
 
+	ICON_BR,
+
 	ICON_END
 };
-
-#define ICON24_END		ICON_END
 
 extern const uint8_t icons[];
 

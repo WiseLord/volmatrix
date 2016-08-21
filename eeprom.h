@@ -12,6 +12,10 @@
 
 #define EEPROM_INPUT_ICONS			0x28
 
+/* Display parameters */
+#define EEPROM_BR_STBY				0x32
+#define EEPROM_BR_WORK				0x33
+
 /* Other parameters */
 #define EEPROM_ENC_RES				0x36
 

@@ -29,6 +29,11 @@ static void powerOff(void)
 
 int main(void)
 {
+	int8_t encCnt = 0;
+	uint8_t cmd = CMD_END;
+
+	static uint8_t dispPrev = MODE_STANDBY;
+
 	rcInit();
 	sndInit();
 	matrixInit();
@@ -36,11 +41,6 @@ int main(void)
 
 	_delay_ms(100);
 	powerOff();
-	sndInit();
-
-	int8_t encCnt = 0;
-	uint8_t cmd = CMD_END;
-	static uint8_t dispPrev = MODE_STANDBY;
 
 	while(1) {
 		encCnt = getEncoder();
@@ -117,8 +117,16 @@ int main(void)
 			displayTime = TIMEOUT_AUDIO;
 			break;
 		case CMD_BTN_1_LONG:
-			if (dispMode == MODE_LEARN)
+			switch (dispMode) {
+			case MODE_STANDBY:
+			case MODE_LEARN:
 				powerOff();
+				break;
+			default:
+				dispMode = MODE_BRIGHTNESS;
+				displayTime = TIMEOUT_BR;
+				break;
+			}
 			break;
 		case CMD_BTN_2_LONG:
 			switch (dispMode) {
@@ -165,6 +173,10 @@ int main(void)
 				displayTime = TIMEOUT_TIME_EDIT;
 				rtcChangeTime(encCnt);
 				break;
+			case MODE_BRIGHTNESS:
+				changeBrWork(encCnt);
+				displayTime = TIMEOUT_BR;
+				break;
 			case MODE_MUTE:
 			case MODE_LOUDNESS:
 			case MODE_TIME:
@@ -208,15 +220,18 @@ int main(void)
 		case MODE_TIME_EDIT:
 			showTime();
 			break;
+		case MODE_BRIGHTNESS:
+			showBrWork();
+			break;
 		default:
 			showSndParam(dispMode, ICON_NATIVE);
 			break;
 		}
 
 		if (dispMode == dispPrev)
-			updateScreen(EFFECT_NONE);
+			updateScreen(EFFECT_NONE, dispMode);
 		else
-			updateScreen(EFFECT_SPLASH);
+			updateScreen(EFFECT_SPLASH, dispMode);
 
 		dispPrev = dispMode;
 	}
