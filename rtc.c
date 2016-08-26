@@ -87,13 +87,13 @@ void rtcNextEditParam(void)
 	case RTC_MIN:
 		rtc.etm--;
 		break;
-	case RTC_SEC:
-		rtc.etm = RTC_DATE;
-		break;
-	case RTC_DATE:
-	case RTC_MONTH:
-		rtc.etm++;
-		break;
+//	case RTC_SEC:
+//		rtc.etm = RTC_DATE;
+//		break;
+//	case RTC_DATE:
+//	case RTC_MONTH:
+//		rtc.etm++;
+//		break;
 	default:
 		rtc.etm = RTC_HOUR;
 		break;

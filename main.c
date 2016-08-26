@@ -76,17 +76,7 @@ int main(void)
 		case CMD_RC_MUTE:
 		case CMD_BTN_2:
 			if (dispMode == MODE_TIME_EDIT) {
-				switch (rtc.etm) {
-				case RTC_HOUR:
-					rtc.etm = RTC_MIN;
-					break;
-				case RTC_MIN:
-					rtc.etm = RTC_SEC;
-					break;
-				default:
-					rtc.etm = RTC_HOUR;
-					break;
-				}
+				rtcNextEditParam();
 				displayTime = TIMEOUT_TIME_EDIT;
 			} else {
 				if (aproc.mute) {
