@@ -5,39 +5,39 @@
 
 RTC_type rtc;
 
-const static RTC_type rtcMin PROGMEM = {0, 0, 0, 1, 1, 1, 1, RTC_NOEDIT};
-const static RTC_type rtcMax PROGMEM = {59, 59, 23, 7, 31, 12, 99, RTC_NOEDIT};
+const static RTC_type rtcMin PROGMEM = {0, 0, 0, /*1, 1, 1, 1,*/ RTC_NOEDIT};
+const static RTC_type rtcMax PROGMEM = {59, 59, 23, /*7, 31, 12, 99,*/ RTC_NOEDIT};
 
-static void rtcWeekDay(void)
-{
-	uint8_t a, y, m;
+//static void rtcWeekDay(void)
+//{
+//	uint8_t a, y, m;
 
-	a = (rtc.month > 2 ? 0 : 1);
-	y = 12 + rtc.year - a;
-	m = rtc.month + 12 * a - 2;
+//	a = (rtc.month > 2 ? 0 : 1);
+//	y = 12 + rtc.year - a;
+//	m = rtc.month + 12 * a - 2;
 
-	rtc.wday = (rtc.date + y + (y / 4) + ((31 * m) / 12)) % 7;
-	if (rtc.wday == 0)
-		rtc.wday = 7;
+//	rtc.wday = (rtc.date + y + (y / 4) + ((31 * m) / 12)) % 7;
+//	if (rtc.wday == 0)
+//		rtc.wday = 7;
 
-	return;
-}
+//	return;
+//}
 
-static uint8_t rtcDaysInMonth(void)
-{
-	uint8_t ret = rtc.month;
+//static uint8_t rtcDaysInMonth(void)
+//{
+//	uint8_t ret = rtc.month;
 
-	if (ret == 2) {
-		ret = rtc.year & 0x03;
-		ret = (ret ? 29 : 28);
-	} else {
-		if (ret > 7)
-			ret++;
-		ret |= 30;
-	}
+//	if (ret == 2) {
+//		ret = rtc.year & 0x03;
+//		ret = (ret ? 29 : 28);
+//	} else {
+//		if (ret > 7)
+//			ret++;
+//		ret |= 30;
+//	}
 
-	return ret;
-}
+//	return ret;
+//}
 
 void rtcReadTime(void)
 {
@@ -47,8 +47,8 @@ void rtcReadTime(void)
 	I2CStart(RTC_I2C_ADDR);
 	I2CWriteByte(RTC_SEC);
 	I2CStart(RTC_I2C_ADDR | I2C_READ);
-	for (i = RTC_SEC; i <= RTC_YEAR; i++) {
-		temp = I2CReadByte((i == RTC_YEAR) ? I2C_NOACK : I2C_ACK);
+	for (i = RTC_SEC; i <= RTC_HOUR; i++) {
+		temp = I2CReadByte((i == RTC_HOUR) ? I2C_NOACK : I2C_ACK);
 		*((int8_t*)&rtc + i) = rtcBinDecToDec(temp);
 	}
 	I2CStop();
@@ -58,21 +58,21 @@ void rtcReadTime(void)
 
 static void rtcSaveTime(void)
 {
-	uint8_t i;
+//	uint8_t i;
 	uint8_t etm = rtc.etm;
 
-	if (etm > RTC_WDAY) {
-		rtcWeekDay();
-		etm = RTC_WDAY;
-	}
+//	if (etm > RTC_WDAY) {
+//		rtcWeekDay();
+//		etm = RTC_WDAY;
+//	}
 
 	I2CStart(RTC_I2C_ADDR);
 	I2CWriteByte(etm);
 	if (etm == RTC_SEC) {
 		I2CWriteByte(0);
 	} else {
-		for (i = etm; i <= RTC_YEAR; i++)
-			I2CWriteByte(rtcDecToBinDec(*((int8_t*)&rtc + i)));
+//		for (i = etm; i <= RTC_YEAR; i++)
+			I2CWriteByte(rtcDecToBinDec(*((int8_t*)&rtc + etm)));
 	}
 
 	I2CStop();
@@ -108,8 +108,8 @@ void rtcChangeTime(int8_t diff)
 	int8_t timeMax = pgm_read_byte((int8_t*)&rtcMax + rtc.etm);
 	int8_t timeMin = pgm_read_byte((int8_t*)&rtcMin + rtc.etm);
 
-	if (rtc.etm == RTC_DATE)
-		timeMax = rtcDaysInMonth();
+//	if (rtc.etm == RTC_DATE)
+//		timeMax = rtcDaysInMonth();
 
 	*time += diff;
 

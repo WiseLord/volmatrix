@@ -9,10 +9,10 @@ enum {
 	RTC_SEC = 0,
 	RTC_MIN,
 	RTC_HOUR,
-	RTC_WDAY,
-	RTC_DATE,
-	RTC_MONTH,
-	RTC_YEAR,
+//	RTC_WDAY,
+//	RTC_DATE,
+//	RTC_MONTH,
+//	RTC_YEAR,
 	RTC_ETM,
 };
 
@@ -20,10 +20,10 @@ typedef struct {
 	int8_t sec;
 	int8_t min;
 	int8_t hour;
-	int8_t wday;
-	int8_t date;
-	int8_t month;
-	int8_t year;
+//	int8_t wday;
+//	int8_t date;
+//	int8_t month;
+//	int8_t year;
 	int8_t etm;
 } RTC_type;
 
