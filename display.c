@@ -405,7 +405,7 @@ void matrixSetBr(uint8_t value)
 	if (value > DISP_MAX_BR)
 		value = DISP_MAX_BR;
 
-	OCR2 = 48 + value * 12;
+	OCR2 = 32 + value * 8;
 }
 
 void showSndParam(sndMode mode, uint8_t icon)
